@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Rabbit — 營運系統</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;--bg4:#222736;
+  --border:#2a2f3d;--text:#e8eaf0;--text2:#a0a8bc;--muted:#5a6180;
+  --teal:#00C9D4;--teal2:#00C9D430;--green:#1DE09A;--coral:#FF5C4D;
+  --amber:#FFB347;--purple:#7C5CFC;
+  --font-head:'Bebas Neue',sans-serif;--font:'Noto Sans TC',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;overflow:hidden}
+.shell{display:flex;height:100vh}
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
+.logo-title{font-family:var(--font-head);font-size:22px;letter-spacing:3px;color:var(--teal)}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:2px}
+nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;color:var(--text2);border-left:3px solid transparent;transition:all .2s;font-size:13px}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--bg3);color:var(--teal);border-left-color:var(--teal)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+#fb-status{font-size:10px;margin-top:4px}
+#fb-status.ok{color:var(--green)}
+#fb-status.err{color:var(--coral)}
+main{flex:1;overflow-y:auto;background:var(--bg)}
+.page{display:none;padding:32px 36px;min-height:100%}
+.page.active{display:block}
+.page-title{font-family:var(--font-head);font-size:36px;letter-spacing:3px;color:var(--text);margin-bottom:4px}
+.page-sub{font-size:12px;color:var(--muted);margin-bottom:28px;letter-spacing:1px}
+.card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.card-label{font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:8px}
+.card-val{font-family:var(--font-head);font-size:28px;letter-spacing:1px;color:var(--text)}
+.card-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.card2{grid-column:span 2}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:11px;color:var(--muted);letter-spacing:1px}
+input,select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-family:var(--font);font-size:13px;outline:none;transition:border .2s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--teal)}
+select option{background:var(--bg3)}
+.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:700;transition:all .2s}
+.btn-primary{background:var(--teal);color:var(--bg)}
+.btn-primary:hover{background:#00b8c2}
+.btn-danger{background:var(--coral);color:#fff}
+.btn-danger:hover{opacity:.85}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--text2)}
+.btn-green{background:var(--green);color:var(--bg)}
+.btn-amber{background:var(--amber);color:var(--bg)}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-bottom:24px}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg3);padding:11px 14px;text-align:left;font-size:11px;color:var(--muted);letter-spacing:1px;font-weight:500;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text2);font-size:12px;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3);color:var(--text)}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.tag-teal{background:#00C9D420;color:var(--teal)}
+.tag-green{background:#1DE09A20;color:var(--green)}
+.tag-coral{background:#FF5C4D20;color:var(--coral)}
+.tag-amber{background:#FFB34720;color:var(--amber)}
+.tag-purple{background:#7C5CFC20;color:var(--purple)}
+.section-title{font-family:var(--font-head);font-size:18px;letter-spacing:2px;color:var(--text);margin:24px 0 14px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.claude-box{background:linear-gradient(135deg,#00C9D408,#7C5CFC08);border:1px solid var(--teal2);border-radius:14px;padding:20px 22px}
+.claude-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--teal);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.claude-prompt{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;color:var(--text2);line-height:1.8;white-space:pre-wrap;margin-bottom:12px;max-height:200px;overflow-y:auto}
+.copy-hint{font-size:11px;color:var(--muted)}
+.divider{height:1px;background:var(--border);margin:20px 0}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:var(--bg);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;transform:translateY(60px);opacity:0;transition:all .3s;z-index:999}
+.toast.show{transform:translateY(0);opacity:1}
+.chart-wrap{position:relative;height:220px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+
+/* Revenue page tabs */
+.rev-tabs{display:flex;gap:0;margin-bottom:24px;border-radius:10px;overflow:hidden;border:1px solid var(--border);width:fit-content}
+.rev-tab{padding:10px 24px;cursor:pointer;font-size:13px;font-weight:700;color:var(--text2);background:var(--bg2);transition:all .2s;letter-spacing:1px}
+.rev-tab.active{background:var(--teal);color:var(--bg)}
+.rev-tab:hover:not(.active){background:var(--bg3);color:var(--text)}
+
+/* Subtotal highlight */
+.subtotal-box{background:linear-gradient(135deg,#1DE09A15,#00C9D415);border:1px solid #1DE09A40;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.subtotal-label{font-size:11px;color:var(--muted);letter-spacing:1px}
+.subtotal-val{font-family:var(--font-head);font-size:24px;color:var(--green);letter-spacing:1px}
+
+/* Summary cards */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.summary-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;text-align:center}
+.summary-card .val{font-family:var(--font-head);font-size:26px;margin:6px 0 4px}
+.summary-card .lbl{font-size:11px;color:var(--muted);letter-spacing:1px}
+
+/* Payment method bar */
+.pay-bar{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.pay-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:12px;display:flex;gap:8px;align-items:center}
+.pay-pill span{font-weight:700;color:var(--teal)}
+
+/* Lesson record panel */
+.lesson-panel{background:var(--bg);border-top:1px solid var(--border);padding:20px 24px}
+.lesson-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.lesson-panel-title{font-size:12px;font-weight:700;color:var(--teal);letter-spacing:1px}
+.lesson-form{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;display:none}
+.lesson-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+.lesson-row-full{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}
+.lesson-table{width:100%;border-collapse:collapse;font-size:11px}
+.lesson-table th{background:var(--bg3);padding:8px 10px;text-align:left;color:var(--muted);letter-spacing:1px;font-size:10px;white-space:nowrap}
+.lesson-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+.lesson-table tr:last-child td{border-bottom:none}
+.lesson-table tr:hover td{background:var(--bg3)}
+.expand-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 6px;transition:color .2s}
+.expand-btn:hover{color:var(--teal)}
+.receipt-thumb{width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)}
+.receipt-upload{background:var(--bg3);border:1px dashed var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:11px;color:var(--muted);transition:border .2s}
+.receipt-upload:hover{border-color:var(--teal);color:var(--teal)}
+
+/* Booking module */
+.booking-status-bar{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.bk-stat{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 20px;min-width:120px}
+.bk-stat .val{font-family:var(--font-head);font-size:26px;letter-spacing:1px}
+.bk-stat .lbl{font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:2px}
+.gcal-banner{background:linear-gradient(135deg,#0d1e35,#0d1e35);border:1px solid #1a3a5c;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.gcal-icon{width:36px;height:36px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.gcal-info{flex:1}
+.gcal-title{font-size:12px;font-weight:700;color:#4A9EF5;letter-spacing:.5px}
+.gcal-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.gcal-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px}
+.gcal-dot::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.gcal-dot.connected::before{background:var(--green)}
+.bk-form{background:var(--bg2);border:1px solid var(--teal2);border-radius:12px;padding:20px;margin-bottom:20px;display:none}
+.time-row{display:grid;grid-template-columns:1fr 30px 1fr;gap:8px;align-items:end}
+.time-arrow{display:flex;align-items:center;justify-content:center;padding-bottom:8px;color:var(--muted);font-size:18px}
+.duration-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:16px;font-size:12px;font-weight:700;margin-top:8px}
+.dur-ok{background:#0a2a1a;color:var(--green);border:1px solid #0f4a2a}
+.dur-warn{background:#2a1a00;color:var(--amber);border:1px solid #4a3000}
+.dur-err{background:#2a0a0a;color:var(--coral);border:1px solid #4a1010}
+.bk-list{display:flex;flex-direction:column;gap:10px}
+.bk-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:14px}
+.bk-date{background:var(--teal2);border:1px solid var(--teal);border-radius:8px;padding:6px 10px;text-align:center;min-width:48px;flex-shrink:0}
+.bk-date .day{font-family:var(--font-head);font-size:22px;color:var(--teal);line-height:1}
+.bk-date .mon{font-size:10px;color:var(--teal);opacity:.7;margin-top:1px}
+.bk-info{flex:1}
+.bk-name{font-size:13px;font-weight:700;color:var(--text)}
+.bk-meta{font-size:11px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.tag-pending{background:#3a280020;color:var(--amber);border:1px solid #4a380040}
+.tag-confirmed{background:#0a2a1a;color:var(--green);border:1px solid #0f4a2a40}
+.tag-cancelled{background:#2a0a0a;color:var(--coral);border:1px solid #4a101040}
+.mini-cal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-month{font-family:var(--font-head);font-size:16px;letter-spacing:2px}
+.cal-nav-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:2px 8px;border-radius:4px}
+.cal-nav-btn:hover{background:var(--bg3);color:var(--text)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-dow{text-align:center;font-size:10px;color:var(--muted);padding:3px 0;letter-spacing:.5px}
+.cal-day{text-align:center;font-size:11px;padding:5px 2px;border-radius:5px;cursor:pointer;color:var(--text2);position:relative}
+.cal-day:hover{background:var(--bg3);color:var(--text)}
+.cal-day.today{background:var(--teal2);color:var(--teal);font-weight:700}
+.cal-day.has-bk::after{content:'';display:block;width:5px;height:5px;border-radius:50%;background:var(--amber);margin:1px auto 0}
+.cal-day.empty{cursor:default;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-title">SMART RABBIT</div>
+    <div class="logo-sub">WAKE CLUB · 營運系統</div>
+  </div>
+  <nav>
+    <div class="nav-item active" onclick="goto('dashboard',this)"><span class="nav-icon">🏠</span> 總覽 Dashboard</div>
+    <div class="nav-item" onclick="goto('ig',this)"><span class="nav-icon">📱</span> IG 行銷追蹤</div>
+    <div class="nav-item" onclick="goto('revenue',this)"><span class="nav-icon">💰</span> 營收管理</div>
+    <div class="nav-item" onclick="goto('crm',this)"><span class="nav-icon">👤</span> 客人 CRM</div>
+    <div class="nav-item" onclick="goto('report',this)"><span class="nav-icon">📋</span> 月報生成</div>
+    <div class="nav-item" onclick="goto('ads',this)"><span class="nav-icon">🎯</span> 廣告投放</div>
+    <div class="nav-item" id="nav-booking" onclick="goto('booking',this)"><span class="nav-icon">📅</span> 預約管理</div>
+  </nav>
+  <div class="sidebar-footer">
+    Smart Rabbit Wake Club
+    <div id="fb-status">⏳ 連接中...</div>
+  </div>
+</aside>
+
+<main>
+<!-- ═══════════════════════════════ DASHBOARD ═══════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="page-title">DASHBOARD</div>
+  <div class="page-sub">Smart Rabbit 營運總覽</div>
+  <div class="card-grid">
+    <div class="card"><div style="height:3px;background:var(--teal);border-radius:2px;margin:-18px -20px 14px"></div><div class="card-label">本月總收入</div><div class="card-val" id="d-income">—</div><div class="card-sub">現金＋轉帳</div></div>
+    <div class="card"><div style="height:3px;background:var(--coral);border-radius:2px;margin:-18px -20px 14px"></div><div class="card-label">本月總支出</div><div class="card-val" id="d-expense">—</div><div class="card-sub">所有支出項目</div></div>
+    <div class="card"><div style="height:3px;background:var(--green);border-radius:2px;margin:-18px -20px 14px"></div><div class="card-label">本月淨利</div><div class="card-val" id="d-profit">—</div><div class="card-sub">收入 − 支出</div></div>
+    <div class="card"><div style="height:3px;background:var(--amber);border-radius:2px;margin:-18px -20px 14px"></div><div class="card-label">IG 追蹤者</div><div class="card-val" id="d-ig">—</div><div class="card-sub">本月新增 <span id="d-ig-new">—</span></div></div>
+  </div>
+  <div class="two-col">
+    <div class="card card2"><div class="card-label" style="margin-bottom:14px">本月收支趨勢</div><div class="chart-wrap"><canvas id="chart-cashflow"></canvas></div></div>
+    <div class="card card2"><div class="card-label" style="margin-bottom:14px">收入類型分佈</div><div class="chart-wrap"><canvas id="chart-income-type"></canvas></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+    <div class="card"><div class="card-label">最近收入紀錄</div><div id="d-recent-income" style="margin-top:10px;font-size:12px;color:var(--text2)">尚無資料</div></div>
+    <div class="card"><div class="card-label">最近支出紀錄</div><div id="d-recent-expense" style="margin-top:10px;font-size:12px;color:var(--text2)">尚無資料</div></div>
+    <div class="card"><div class="card-label">本月待辦提醒</div>
+      <div style="margin-top:10px;font-size:12px;line-height:2.2">
+        <div><span style="color:var(--amber)">●</span> 更新 IG 數據</div>
+        <div><span style="color:var(--teal)">●</span> 記錄本週收入</div>
+        <div><span style="color:var(--green)">●</span> CRM 新增體驗客</div>
+        <div><span style="color:var(--purple)">●</span> 月報生成分析</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ IG ═══════════════════════════════ -->
+<div class="page" id="page-ig">
+  <div class="page-title">IG 行銷追蹤</div>
+  <div class="page-sub">每篇貼文 / Reels 數據紀錄</div>
+
+  <div class="card" style="margin-bottom:20px">
+    <!-- 基本資訊 -->
+    <div style="font-size:11px;color:var(--teal);letter-spacing:2px;margin-bottom:12px">▎ 貼文基本資訊</div>
+    <div class="form-grid">
+      <div class="form-group"><label>發布日期</label><input id="ig-date" type="date"></div>
+      <div class="form-group"><label>貼文類型</label>
+        <select id="ig-type">
+          <option>Reels</option>
+          <option>靜態貼文</option>
+          <option>輪播貼文</option>
+          <option>限動</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:span 2"><label>貼文標題 / 說明</label><input id="ig-title" placeholder="例：滑水體驗開幕宣傳影片"></div>
+      <div class="form-group"><label>貼文連結（選填）</label><input id="ig-url" placeholder="https://www.instagram.com/..."></div>
+    </div>
+
+    <!-- 觸及數據 -->
+    <div style="font-size:11px;color:var(--teal);letter-spacing:2px;margin:16px 0 12px">▎ 觸及與互動數據</div>
+    <div class="form-grid">
+      <div class="form-group"><label>觸及人數</label><input id="ig-reach" type="number" placeholder="0"></div>
+      <div class="form-group"><label>曝光次數</label><input id="ig-impressions" type="number" placeholder="0"></div>
+      <div class="form-group"><label>按讚數</label><input id="ig-likes" type="number" placeholder="0"></div>
+      <div class="form-group"><label>留言數</label><input id="ig-comments" type="number" placeholder="0"></div>
+      <div class="form-group"><label>分享數</label><input id="ig-shares" type="number" placeholder="0"></div>
+      <div class="form-group"><label>儲存數</label><input id="ig-saves" type="number" placeholder="0"></div>
+      <div class="form-group"><label>新增追蹤者</label><input id="ig-new-followers" type="number" placeholder="0"></div>
+      <div class="form-group"><label>完播率（Reels，%）</label><input id="ig-completion" type="number" placeholder="0" min="0" max="100"></div>
+    </div>
+
+    <!-- 受眾數據 -->
+    <div style="font-size:11px;color:var(--teal);letter-spacing:2px;margin:16px 0 12px">▎ 受眾洞察（從 IG 洞察報告填入）</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>女性比例（%）</label>
+        <input id="ig-female" type="number" placeholder="45" min="0" max="100" oninput="calcMale()">
+      </div>
+      <div class="form-group">
+        <label>男性比例（%）</label>
+        <input id="ig-male" type="number" placeholder="55" min="0" max="100" readonly style="opacity:.7">
+        <span id="ig-gender-hint" style="font-size:10px;color:var(--muted)">自動計算 = 100 − 女性%</span>
+      </div>
+      <div class="form-group">
+        <label>主要年齡層 1</label>
+        <select id="ig-age1">
+          <option value="">— 選擇 —</option>
+          <option>13–17</option><option>18–24</option><option>25–34</option>
+          <option>35–44</option><option>45–54</option><option>55+</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>佔比（%）</label>
+        <input id="ig-age1-pct" type="number" placeholder="40" min="0" max="100">
+      </div>
+      <div class="form-group">
+        <label>主要年齡層 2</label>
+        <select id="ig-age2">
+          <option value="">— 選擇 —</option>
+          <option>13–17</option><option>18–24</option><option>25–34</option>
+          <option>35–44</option><option>45–54</option><option>55+</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>佔比（%）</label>
+        <input id="ig-age2-pct" type="number" placeholder="30" min="0" max="100">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveIG()">💾 儲存貼文數據</button>
+  </div>
+
+  <!-- 摘要卡 -->
+  <div class="card-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+    <div class="card"><div class="card-label">總貼文數</div><div class="card-val" id="ig-stat-posts">—</div></div>
+    <div class="card"><div class="card-label">平均觸及</div><div class="card-val" id="ig-stat-reach">—</div></div>
+    <div class="card"><div class="card-label">平均互動率</div><div class="card-val" id="ig-stat-eng">—</div></div>
+    <div class="card"><div class="card-label">累計新增追蹤</div><div class="card-val" id="ig-stat-followers">—</div></div>
+  </div>
+
+  <div class="section-title">貼文紀錄</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>日期</th><th>類型</th><th>標題</th><th>觸及</th><th>按讚</th>
+        <th>留言</th><th>分享</th><th>儲存</th><th>新追蹤</th>
+        <th>互動率</th><th>完播率</th><th>女:男</th><th>主要年齡</th><th></th>
+      </tr></thead>
+      <tbody id="ig-tbody"><tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ REVENUE ═══════════════════════════════ -->
+<div class="page" id="page-revenue">
+  <div class="page-title">營收管理</div>
+  <div class="page-sub">收入 · 支出 · 區間匯總</div>
+
+  <div class="rev-tabs">
+    <div class="rev-tab active" id="tab-income" onclick="switchRevTab('income')">💰 新增收入</div>
+    <div class="rev-tab" id="tab-expense" onclick="switchRevTab('expense')">🧾 新增支出</div>
+    <div class="rev-tab" id="tab-summary" onclick="switchRevTab('summary')">📊 區間匯總</div>
+  </div>
+
+  <!-- 收入 -->
+  <div id="rev-income-panel">
+    <div class="card" style="margin-bottom:20px">
+      <div class="form-grid">
+        <div class="form-group"><label>日期</label><input id="inc-date" type="date"></div>
+        <div class="form-group"><label>客人姓名</label><input id="inc-name" placeholder="王小明"></div>
+        <div class="form-group"><label>收入類型</label>
+          <select id="inc-type">
+            <option>單次體驗</option>
+            <option>暢滑方案</option>
+            <option>包場</option>
+            <option>教練課</option>
+            <option>裝備租借</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-group"><label>組數</label><input id="inc-qty" type="number" placeholder="1" min="1" oninput="calcSubtotal()"></div>
+        <div class="form-group"><label>單組金額 (NT$)</label><input id="inc-unit" type="number" placeholder="1200" oninput="calcSubtotal()"></div>
+        <div class="form-group"><label>收費方式</label>
+          <select id="inc-pay">
+            <option>現金</option>
+            <option>轉帳</option>
+            <option>Line Pay</option>
+            <option>信用卡</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-group"><label>備註</label><input id="inc-note" placeholder="選填"></div>
+      </div>
+      <div class="subtotal-box">
+        <div>
+          <div class="subtotal-label">自動計算小計</div>
+          <div class="subtotal-val" id="inc-subtotal">NT$ —</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted)" id="inc-formula">組數 × 單組金額</div>
+      </div>
+      <button class="btn btn-primary" onclick="saveIncome()">💾 儲存收入紀錄</button>
+    </div>
+
+    <div class="section-title">收入紀錄</div>
+    <div class="table-wrap">
+      <table><thead><tr><th>日期</th><th>客人</th><th>類型</th><th>組數</th><th>單組金額</th><th>小計</th><th>收費方式</th><th>備註</th><th></th></tr></thead>
+      <tbody id="income-tbody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- 支出 -->
+  <div id="rev-expense-panel" style="display:none">
+    <div class="card" style="margin-bottom:20px">
+      <div class="form-grid">
+        <div class="form-group"><label>日期</label><input id="exp-date" type="date"></div>
+        <div class="form-group"><label>購買人</label><input id="exp-buyer" placeholder="Simon"></div>
+        <div class="form-group"><label>地點 / 商家</label><input id="exp-place" placeholder="家樂福"></div>
+        <div class="form-group"><label>金額 (NT$)</label><input id="exp-amount" type="number" placeholder="0"></div>
+        <div class="form-group"><label>支付方式</label>
+          <select id="exp-pay">
+            <option>現金</option>
+            <option>Simon代墊</option>
+            <option>轉帳</option>
+            <option>公司帳戶</option>
+            <option>信用卡</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-group"><label>類別</label>
+          <select id="exp-cat">
+            <option>日用品</option>
+            <option>設備維修</option>
+            <option>油料</option>
+            <option>行銷費用</option>
+            <option>食材飲料</option>
+            <option>安全裝備</option>
+            <option>場地費用</option>
+            <option>人事費用</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-group"><label>說明</label><input id="exp-desc" placeholder="選填說明"></div>
+      </div>
+      <!-- Receipt upload -->
+      <div style="margin-bottom:16px">
+        <div class="form-group">
+          <label>收據照片（選填）</label>
+          <div class="receipt-upload" onclick="document.getElementById('exp-receipt-input').click()">
+            <div id="receipt-preview-wrap">📎 點擊上傳收據照片</div>
+          </div>
+          <input type="file" id="exp-receipt-input" accept="image/*" style="display:none" onchange="previewReceipt(this)">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveExpense()">💾 儲存支出紀錄</button>
+    </div>
+
+    <div class="section-title">支出紀錄</div>
+    <div class="table-wrap">
+      <table><thead><tr><th>日期</th><th>購買人</th><th>地點</th><th>金額</th><th>支付方式</th><th>類別</th><th>說明</th><th>收據</th><th></th></tr></thead>
+      <tbody id="expense-tbody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- 區間匯總 -->
+  <div id="rev-summary-panel" style="display:none">
+    <div class="card" style="margin-bottom:24px">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr auto">
+        <div class="form-group"><label>開始日期</label><input id="sum-start" type="date"></div>
+        <div class="form-group"><label>結束日期</label><input id="sum-end" type="date"></div>
+        <div class="form-group"><label style="opacity:0">查詢</label><button class="btn btn-primary" onclick="generateSummary()">📊 產生匯總</button></div>
+      </div>
+    </div>
+
+    <div id="summary-result" style="display:none">
+      <div class="summary-grid">
+        <div class="summary-card"><div class="lbl">總收入</div><div class="val" id="sum-income" style="color:var(--green)">—</div><div class="lbl" id="sum-income-sub"></div></div>
+        <div class="summary-card"><div class="lbl">總支出</div><div class="val" id="sum-expense" style="color:var(--coral)">—</div><div class="lbl" id="sum-expense-sub"></div></div>
+        <div class="summary-card"><div class="lbl">淨利潤</div><div class="val" id="sum-profit">—</div><div class="lbl">收入 − 支出</div></div>
+        <div class="summary-card"><div class="lbl">總組數</div><div class="val" id="sum-qty" style="color:var(--teal)">—</div><div class="lbl">體驗組數合計</div></div>
+      </div>
+
+      <!-- Payment method stats -->
+      <div class="section-title">收費方式統計</div>
+      <div class="pay-bar" id="pay-stats"></div>
+
+      <!-- Income detail -->
+      <div class="section-title">收入明細</div>
+      <div class="table-wrap">
+        <table><thead><tr><th>日期</th><th>客人</th><th>類型</th><th>組數</th><th>單組</th><th>小計</th><th>收費方式</th><th>備註</th></tr></thead>
+        <tbody id="sum-income-tbody"></tbody></table>
+      </div>
+
+      <!-- Expense detail -->
+      <div class="section-title">支出明細</div>
+      <div class="table-wrap">
+        <table><thead><tr><th>日期</th><th>購買人</th><th>地點</th><th>金額</th><th>支付方式</th><th>類別</th><th>說明</th></tr></thead>
+        <tbody id="sum-expense-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ CRM ═══════════════════════════════ -->
+<div class="page" id="page-crm">
+  <div class="page-title">客人 CRM</div>
+  <div class="page-sub">客戶資料管理</div>
+  <div class="top-bar">
+    <input id="crm-search" placeholder="🔍 搜尋姓名 / 電話" style="width:240px" oninput="renderCRM()">
+    <button class="btn btn-primary" onclick="showCRMForm()">＋ 新增客人</button>
+  </div>
+  <div class="card" id="crm-form" style="display:none;margin-bottom:20px">
+    <div class="form-grid">
+      <div class="form-group"><label>姓名</label><input id="crm-name" placeholder="王小明"></div>
+      <div class="form-group"><label>電話</label><input id="crm-phone" placeholder="09xx-xxx-xxx"></div>
+      <div class="form-group"><label>IG 帳號</label><input id="crm-ig" placeholder="@username"></div>
+      <div class="form-group"><label>Line ID</label><input id="crm-line" placeholder="line_id"></div>
+      <div class="form-group"><label>來源</label>
+        <select id="crm-source"><option>問卷</option><option>IG 私訊</option><option>朋友介紹</option><option>現場來訪</option><option>廣告</option><option>其他</option></select>
+      </div>
+      <div class="form-group"><label>等級</label>
+        <select id="crm-level"><option>潛在</option><option>體驗過</option><option>暢滑訂閱</option><option>VIP</option></select>
+      </div>
+      <div class="form-group"><label>首次體驗日</label><input id="crm-first-date" type="date"></div>
+      <div class="form-group"><label>體驗次數</label><input id="crm-visits" type="number" placeholder="0"></div>
+      <div class="form-group"><label>備註</label><input id="crm-note" placeholder="選填"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="saveCRM()">💾 儲存客人</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('crm-form').style.display='none'">取消</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table><thead><tr><th></th><th>姓名</th><th>電話</th><th>IG</th><th>Line</th><th>來源</th><th>等級</th><th>首次體驗</th><th>次數</th><th>上課紀錄</th><th>備註</th><th></th></tr></thead>
+    <tbody id="crm-tbody"><tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ REPORT ═══════════════════════════════ -->
+<div class="page" id="page-report">
+  <div class="page-title">月報生成</div>
+  <div class="page-sub">一鍵產生 Claude 分析指令</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="form-group"><label>選擇月份（起）</label><input id="report-start" type="date"></div>
+      <div class="form-group"><label>選擇月份（迄）</label><input id="report-end" type="date"></div>
+    </div>
+    <button class="btn btn-primary" onclick="generateReport()">📋 生成月報指令</button>
+  </div>
+  <div class="claude-box" id="report-box" style="display:none">
+    <div class="claude-label">🤖 Claude 月報分析指令</div>
+    <div class="claude-prompt" id="report-prompt"></div>
+    <button class="btn btn-ghost" onclick="copyPrompt('report-prompt')">📋 複製指令</button>
+    <span class="copy-hint" style="margin-left:12px">複製後貼到新的 Claude 對話，獲得完整月報分析</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ADS ═══════════════════════════════ -->
+<div class="page" id="page-ads">
+  <div class="page-title">廣告投放</div>
+  <div class="page-sub">IG 廣告成效追蹤</div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="form-grid">
+      <div class="form-group"><label>投放開始日期</label><input id="ad-date-start" type="date"></div>
+      <div class="form-group"><label>投放結束日期</label><input id="ad-date-end" type="date"></div>
+      <div class="form-group" style="grid-column:span 2"><label>廣告標題</label><input id="ad-title" placeholder="例：5月開幕暢滑方案推廣"></div>
+      <div class="form-group" style="grid-column:span 2"><label>廣告連結（選填）</label><input id="ad-url" placeholder="https://www.instagram.com/..."></div>
+      <div class="form-group"><label>廣告類型</label>
+        <select id="ad-type"><option>Reels 廣告</option><option>貼文廣告</option><option>限動廣告</option></select>
+      </div>
+      <div class="form-group"><label>投放目標</label>
+        <select id="ad-goal"><option>品牌曝光</option><option>暢滑方案</option><option>單次體驗</option><option>活動推廣</option></select>
+      </div>
+      <div class="form-group"><label>花費金額 (NT$)</label><input id="ad-spend" type="number" placeholder="0"></div>
+      <div class="form-group"><label>觸及人數</label><input id="ad-reach" type="number" placeholder="0"></div>
+      <div class="form-group"><label>曝光次數</label><input id="ad-impressions" type="number" placeholder="0"></div>
+      <div class="form-group"><label>點擊次數</label><input id="ad-clicks" type="number" placeholder="0"></div>
+      <div class="form-group"><label>新增追蹤者</label><input id="ad-followers" type="number" placeholder="0"></div>
+      <div class="form-group"><label>私訊詢問數</label><input id="ad-dm" type="number" placeholder="0"></div>
+      <div class="form-group"><label>成交人數</label><input id="ad-convert" type="number" placeholder="0"></div>
+      <div class="form-group"><label>成交金額 (NT$)</label><input id="ad-revenue" type="number" placeholder="0"></div>
+      <div class="form-group"><label>備註</label><input id="ad-desc" placeholder="選填"></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveAd()">💾 儲存投放數據</button>
+  </div>
+  <div class="two-col" style="margin-bottom:20px">
+    <div class="card"><div class="card-label" style="margin-bottom:14px">花費 vs 成交金額</div><div class="chart-wrap"><canvas id="chart-ads-bar"></canvas></div></div>
+    <div class="card"><div class="card-label" style="margin-bottom:14px">廣告類型佔比</div><div class="chart-wrap"><canvas id="chart-ads-pie"></canvas></div></div>
+  </div>
+  <div class="section-title">投放紀錄</div>
+  <div class="table-wrap" style="margin-bottom:20px">
+    <table><thead><tr><th>廣告標題</th><th>投放區間</th><th>天數</th><th>類型</th><th>目標</th><th>花費</th><th>觸及</th><th>點擊</th><th>私訊</th><th>成交</th><th>成交金額</th><th>ROAS</th><th>CPC</th><th></th></tr></thead>
+    <tbody id="ads-tbody"><tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">尚無投放紀錄</td></tr></tbody></table>
+  </div>
+  <div class="claude-box">
+    <div class="claude-label">🤖 Claude 廣告分析指令</div>
+    <div class="claude-prompt" id="ads-claude-prompt">儲存投放數據後，這裡會自動生成可複製給 Claude 的廣告成效分析指令。</div>
+    <button class="btn btn-ghost" onclick="copyPrompt('ads-claude-prompt')">📋 複製指令</button>
+    <span class="copy-hint" style="margin-left:12px">複製後貼到新的 Claude 對話，獲得廣告成效深度分析</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ BOOKING ═══════════════════════════════ -->
+<div class="page" id="page-booking">
+  <div class="page-title">預約管理</div>
+  <div class="page-sub">手動輸入預約，確認後自動同步至 Google Calendar</div>
+
+  <div class="booking-status-bar">
+    <div class="bk-stat"><div class="val" id="bk-stat-total" style="color:var(--teal)">0</div><div class="lbl">本月預約</div></div>
+    <div class="bk-stat"><div class="val" id="bk-stat-confirmed" style="color:var(--green)">0</div><div class="lbl">已確認</div></div>
+    <div class="bk-stat"><div class="val" id="bk-stat-pending" style="color:var(--amber)">0</div><div class="lbl">待確認</div></div>
+    <div class="bk-stat"><div class="val" id="bk-stat-cancelled" style="color:var(--coral)">0</div><div class="lbl">已取消</div></div>
+  </div>
+
+  <div class="two-col" style="align-items:start">
+    <div>
+      <div class="top-bar">
+        <div class="section-title" style="margin:0">預約列表</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select id="bk-filter" onchange="renderBookings()" style="width:auto;padding:7px 12px;font-size:12px">
+            <option value="">全部狀態</option>
+            <option value="待確認">待確認</option>
+            <option value="已確認">已確認</option>
+            <option value="已取消">已取消</option>
+          </select>
+          <button class="btn btn-primary" onclick="toggleBKForm()">＋ 新增預約</button>
+        </div>
+      </div>
+
+      <div class="bk-form" id="bk-form">
+        <div class="gcal-banner">
+          <div class="gcal-icon">📅</div>
+          <div class="gcal-info">
+            <div class="gcal-title">Google Calendar 同步</div>
+            <div class="gcal-sub">確認後自動新增行事曆事件到 Simon 的帳號</div>
+          </div>
+          <span class="gcal-dot" id="gcal-dot-form">尚未授權</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>客人姓名</label><input id="bk-name" placeholder="例：王小明"></div>
+          <div class="form-group"><label>聯絡電話</label><input id="bk-phone" placeholder="09xx-xxx-xxx"></div>
+          <div class="form-group"><label>預約日期</label><input id="bk-date" type="date"></div>
+          <div class="form-group"><label>人數</label><input id="bk-pax" type="number" min="1" value="1"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>時段</label>
+          <div class="time-row">
+            <div>
+              <select id="bk-start" onchange="onBKStartChange()">
+                <option value="">── 開始時間 ──</option>
+                <option>07:00</option><option>08:00</option><option>09:00</option><option>10:00</option>
+                <option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option>
+                <option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option>
+                <option>19:00</option><option value="custom">✏️ 自訂...</option>
+              </select>
+              <input id="bk-start-custom" type="text" placeholder="HH:MM" maxlength="5" style="display:none;margin-top:6px" oninput="fmtTime(this);calcBKDur()" onblur="calcBKDur()">
+            </div>
+            <div class="time-arrow">→</div>
+            <div>
+              <select id="bk-end" onchange="onBKEndChange()">
+                <option value="">── 結束時間 ──</option>
+                <option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option>
+                <option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option>
+                <option>16:00</option><option>17:00</option><option>18:00</option><option>19:00</option>
+                <option>20:00</option><option value="custom">✏️ 自訂...</option>
+              </select>
+              <input id="bk-end-custom" type="text" placeholder="HH:MM" maxlength="5" style="display:none;margin-top:6px" oninput="fmtTime(this);calcBKDur()" onblur="calcBKDur()">
+            </div>
+          </div>
+          <div id="bk-duration-tag" style="margin-top:8px"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>方案</label>
+            <select id="bk-plan">
+              <option>單次體驗 NT$1,500</option>
+              <option>暢滑月費 NT$9,990</option>
+              <option>其他</option>
+            </select>
+          </div>
+          <div class="form-group"><label>來源</label>
+            <select id="bk-source">
+              <option>IG 私訊</option><option>Line</option><option>朋友介紹</option><option>其他</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:span 2"><label>備註</label><input id="bk-note" placeholder="選填"></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+          <button class="btn btn-ghost" onclick="toggleBKForm()">取消</button>
+          <button class="btn btn-primary" onclick="saveBooking()">✓ 確認預約並同步 Google Calendar</button>
+        </div>
+      </div>
+
+      <div class="bk-list" id="bk-list" style="margin-top:16px">
+        <div style="text-align:center;color:var(--muted);padding:32px;font-size:12px">尚無預約紀錄</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mini-cal">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+          <div class="cal-month" id="cal-title"></div>
+          <button class="cal-nav-btn" onclick="calNext()">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+
+      <div class="card" style="padding:18px 20px">
+        <div class="card-label" style="margin-bottom:14px">Google Calendar 授權</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📅</div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700" id="gcal-account-label">尚未連結 Google 帳號</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px" id="gcal-status-label">點擊授權以啟用自動同步</div>
+          </div>
+          <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" id="gcal-auth-btn" onclick="handleGCalAuth()">授權連結</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8">
+          授權後，每筆狀態為「已確認」的預約<br>將自動建立 Google Calendar 事件。<br>Simon 手機也會收到行事曆提醒。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// FIREBASE INIT
+// ════════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBhNpXddVYflkbIb0h1-ZkRAKG74yEgjb8",
+  authDomain: "smart-rabbit-wake-club.firebaseapp.com",
+  projectId: "smart-rabbit-wake-club",
+  storageBucket: "smart-rabbit-wake-club.firebasestorage.app",
+  messagingSenderId: "616222136860",
+  appId: "1:616222136860:web:30d96bbd484f2875acddd9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+const fbStatus = document.getElementById('fb-status');
+
+db.collection('_ping').limit(1).get()
+  .then(() => { fbStatus.textContent = '✅ 已連接 Firebase'; fbStatus.className = 'ok'; })
+  .catch(e => { fbStatus.textContent = '❌ 連接失敗: '+e.code; fbStatus.className = 'err'; });
+
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+const state = { ig:[], income:[], expenses:[], customers:[], ads:[], bookings:[] };
+
+// ════════════════════════════════════════════════════════════════
+// REALTIME LISTENERS
+// ════════════════════════════════════════════════════════════════
+db.collection('ig').orderBy('createdAt').onSnapshot(snap => {
+  state.ig = snap.docs.map(d=>({_id:d.id,...d.data()}));
+  if(activePage()==='ig') renderIG();
+  updateDashboard();
+});
+db.collection('income').orderBy('date').onSnapshot(snap => {
+  state.income = snap.docs.map(d=>({_id:d.id,...d.data()}));
+  if(activePage()==='revenue') renderIncomeTable();
+  updateDashboard();
+});
+db.collection('expenses').orderBy('date').onSnapshot(snap => {
+  state.expenses = snap.docs.map(d=>({_id:d.id,...d.data()}));
+  if(activePage()==='revenue') renderExpenseTable();
+  updateDashboard();
+});
+db.collection('customers').orderBy('createdAt').onSnapshot(snap => {
+  state.customers = snap.docs.map(d=>({_id:d.id,...d.data()}));
+  if(activePage()==='crm') renderCRM();
+  updateDashboard();
+});
+db.collection('ads').orderBy('createdAt').onSnapshot(snap => {
+  state.ads = snap.docs.map(d=>({_id:d.id,...d.data()}));
+  if(activePage()==='ads') renderAds();
+});
+db.collection('bookings').orderBy('createdAt').onSnapshot(snap => {
+  state.bookings = snap.docs.map(d=>({_id:d.id,...d.data()}));
+  if(activePage()==='booking') renderBookings();
+  updateBookingStats();
+});
+
+// ════════════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════════════
+function activePage(){
+  const p=document.querySelector('.page.active');
+  return p?p.id.replace('page-',''):'';
+}
+function goto(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(el) el.classList.add('active');
+  if(page==='ig') renderIG();
+  if(page==='revenue'){ renderIncomeTable(); renderExpenseTable(); }
+  if(page==='crm') renderCRM();
+  if(page==='ads') renderAds();
+  if(page==='dashboard') updateDashboard();
+}
+
+// ════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function copyPrompt(id){
+  navigator.clipboard.writeText(document.getElementById(id).textContent)
+    .then(()=>toast('已複製到剪貼簿！'));
+}
+
+// ════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════════
+let chartCashflow, chartIncomeType;
+function updateDashboard(){
+  const now=new Date();
+  const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const thisIncome=state.income.filter(r=>r.date&&r.date.startsWith(ym));
+  const thisExpenses=state.expenses.filter(r=>r.date&&r.date.startsWith(ym));
+  const totalIncome=thisIncome.reduce((s,r)=>s+(r.subtotal||0),0);
+  const totalExpenses=thisExpenses.reduce((s,r)=>s+(r.amount||0),0);
+  const profit=totalIncome-totalExpenses;
+
+  document.getElementById('d-income').textContent=totalIncome?`NT$${totalIncome.toLocaleString()}`:'—';
+  document.getElementById('d-expense').textContent=totalExpenses?`NT$${totalExpenses.toLocaleString()}`:'—';
+  const pEl=document.getElementById('d-profit');
+  pEl.textContent=totalIncome||totalExpenses?`NT$${profit.toLocaleString()}`:'—';
+  pEl.style.color=profit>=0?'var(--green)':'var(--coral)';
+
+  const ym2=ym;
+  const igThisMonth=state.ig.filter(r=>r.date&&r.date.startsWith(ym2));
+  const igTotalFollowers=state.ig.reduce((s,r)=>s+(r.newFollowers||0),0);
+  const igMonthFollowers=igThisMonth.reduce((s,r)=>s+(r.newFollowers||0),0);
+  document.getElementById('d-ig').textContent=igTotalFollowers||'—';
+  document.getElementById('d-ig-new').textContent=igMonthFollowers?'+'+igMonthFollowers:'—';
+
+  // Recent income
+  const ri=document.getElementById('d-recent-income');
+  const recentInc=state.income.slice(-3).reverse();
+  ri.innerHTML=recentInc.length?recentInc.map(r=>`<div style="padding:4px 0;border-bottom:1px solid var(--border)">${r.name||'—'} <span class="tag tag-green">NT$${(r.subtotal||0).toLocaleString()}</span></div>`).join(''):'尚無資料';
+
+  // Recent expenses
+  const re=document.getElementById('d-recent-expense');
+  const recentExp=state.expenses.slice(-3).reverse();
+  re.innerHTML=recentExp.length?recentExp.map(r=>`<div style="padding:4px 0;border-bottom:1px solid var(--border)">${r.place||'—'} <span class="tag tag-coral">NT$${(r.amount||0).toLocaleString()}</span></div>`).join(''):'尚無資料';
+
+  // Cashflow chart
+  if(chartCashflow) chartCashflow.destroy();
+  const cfCtx=document.getElementById('chart-cashflow');
+  if(cfCtx){
+    const days=[...new Set([...thisIncome.map(r=>r.date),...thisExpenses.map(r=>r.date)])].sort();
+    chartCashflow=new Chart(cfCtx,{type:'bar',data:{
+      labels:days,
+      datasets:[
+        {label:'收入',data:days.map(d=>thisIncome.filter(r=>r.date===d).reduce((s,r)=>s+(r.subtotal||0),0)),backgroundColor:'#1DE09A80'},
+        {label:'支出',data:days.map(d=>thisExpenses.filter(r=>r.date===d).reduce((s,r)=>s+(r.amount||0),0)),backgroundColor:'#FF5C4D80'}
+      ]
+    },options:{plugins:{legend:{labels:{color:'#a0a8bc',font:{size:11}}}},scales:{x:{ticks:{color:'#5a6180'},grid:{color:'#2a2f3d'}},y:{ticks:{color:'#5a6180'},grid:{color:'#2a2f3d'}}}}});
+  }
+
+  // Income type chart
+  if(chartIncomeType) chartIncomeType.destroy();
+  const itCtx=document.getElementById('chart-income-type');
+  if(itCtx&&thisIncome.length){
+    const types=[...new Set(thisIncome.map(r=>r.type))];
+    chartIncomeType=new Chart(itCtx,{type:'doughnut',data:{
+      labels:types,
+      datasets:[{data:types.map(t=>thisIncome.filter(r=>r.type===t).reduce((s,r)=>s+(r.subtotal||0),0)),
+        backgroundColor:['#00C9D4','#1DE09A','#7C5CFC','#FFB347','#FF5C4D','#5a6180'],borderWidth:0}]
+    },options:{plugins:{legend:{labels:{color:'#a0a8bc',font:{size:11}}}},cutout:'60%'}});
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// REVENUE TABS
+// ════════════════════════════════════════════════════════════════
+function switchRevTab(tab){
+  ['income','expense','summary'].forEach(t=>{
+    document.getElementById('rev-'+t+'-panel').style.display=t===tab?'block':'none';
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// INCOME
+// ════════════════════════════════════════════════════════════════
+function calcSubtotal(){
+  const qty=parseInt(document.getElementById('inc-qty').value)||0;
+  const unit=parseInt(document.getElementById('inc-unit').value)||0;
+  const sub=qty*unit;
+  document.getElementById('inc-subtotal').textContent=sub?`NT$ ${sub.toLocaleString()}`:'NT$ —';
+  document.getElementById('inc-formula').textContent=qty&&unit?`${qty} 組 × NT$${unit.toLocaleString()} = NT$${sub.toLocaleString()}`:'組數 × 單組金額';
+}
+function saveIncome(){
+  const qty=parseInt(document.getElementById('inc-qty').value)||0;
+  const unit=parseInt(document.getElementById('inc-unit').value)||0;
+  const data={
+    date:document.getElementById('inc-date').value,
+    name:document.getElementById('inc-name').value,
+    type:document.getElementById('inc-type').value,
+    qty, unit,
+    subtotal:qty*unit,
+    pay:document.getElementById('inc-pay').value,
+    note:document.getElementById('inc-note').value,
+    createdAt:Date.now()
+  };
+  if(!data.date||!data.name){toast('請填入日期和客人姓名');return;}
+  if(!qty||!unit){toast('請填入組數和單組金額');return;}
+  db.collection('income').add(data).then(()=>{
+    toast('✅ 收入已儲存！');
+    ['inc-date','inc-name','inc-qty','inc-unit','inc-note'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('inc-subtotal').textContent='NT$ —';
+    document.getElementById('inc-formula').textContent='組數 × 單組金額';
+  });
+}
+function renderIncomeTable(){
+  const tbody=document.getElementById('income-tbody');
+  if(!state.income.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr>';return;}
+  const payColor={'現金':'tag-green','轉帳':'tag-teal','Line Pay':'tag-purple','信用卡':'tag-amber','其他':'tag-coral'};
+  tbody.innerHTML=state.income.slice().reverse().map(r=>`<tr>
+    <td>${r.date||'—'}</td><td>${r.name||'—'}</td>
+    <td><span class="tag tag-teal">${r.type||'—'}</span></td>
+    <td>${r.qty||0} 組</td>
+    <td>NT$${(r.unit||0).toLocaleString()}</td>
+    <td style="color:var(--green);font-weight:700">NT$${(r.subtotal||0).toLocaleString()}</td>
+    <td><span class="tag ${payColor[r.pay]||'tag-teal'}">${r.pay||'—'}</span></td>
+    <td>${r.note||'—'}</td>
+    <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('income','${r._id}')">刪除</button></td>
+  </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// EXPENSE
+// ════════════════════════════════════════════════════════════════
+let receiptFile=null;
+function previewReceipt(input){
+  receiptFile=input.files[0];
+  if(!receiptFile)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('receipt-preview-wrap').innerHTML=
+      `<img src="${e.target.result}" style="max-height:80px;border-radius:6px;margin-bottom:4px"><br><span style="font-size:11px;color:var(--teal)">${receiptFile.name}</span>`;
+  };
+  reader.readAsDataURL(receiptFile);
+}
+async function saveExpense(){
+  const amount=parseInt(document.getElementById('exp-amount').value)||0;
+  const data={
+    date:document.getElementById('exp-date').value,
+    buyer:document.getElementById('exp-buyer').value,
+    place:document.getElementById('exp-place').value,
+    amount,
+    pay:document.getElementById('exp-pay').value,
+    cat:document.getElementById('exp-cat').value,
+    desc:document.getElementById('exp-desc').value,
+    receiptUrl:'',
+    createdAt:Date.now()
+  };
+  if(!data.date||!data.buyer){toast('請填入日期和購買人');return;}
+  if(!amount){toast('請填入金額');return;}
+
+  // Upload receipt if exists
+  if(receiptFile){
+    try{
+      const ref=storage.ref(`receipts/${Date.now()}_${receiptFile.name}`);
+      await ref.put(receiptFile);
+      data.receiptUrl=await ref.getDownloadURL();
+    }catch(e){ console.warn('Receipt upload failed',e); }
+  }
+
+  db.collection('expenses').add(data).then(()=>{
+    toast('✅ 支出已儲存！');
+    ['exp-date','exp-buyer','exp-place','exp-amount','exp-desc'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('receipt-preview-wrap').innerHTML='📎 點擊上傳收據照片';
+    receiptFile=null;
+  });
+}
+function renderExpenseTable(){
+  const tbody=document.getElementById('expense-tbody');
+  if(!state.expenses.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr>';return;}
+  const catColor={'日用品':'tag-teal','設備維修':'tag-coral','油料':'tag-amber','行銷費用':'tag-purple','食材飲料':'tag-green','安全裝備':'tag-teal','場地費用':'tag-amber','人事費用':'tag-purple','其他':'tag-coral'};
+  tbody.innerHTML=state.expenses.slice().reverse().map(r=>`<tr>
+    <td>${r.date||'—'}</td><td>${r.buyer||'—'}</td><td>${r.place||'—'}</td>
+    <td style="color:var(--coral);font-weight:700">NT$${(r.amount||0).toLocaleString()}</td>
+    <td>${r.pay||'—'}</td>
+    <td><span class="tag ${catColor[r.cat]||'tag-teal'}">${r.cat||'—'}</span></td>
+    <td>${r.desc||'—'}</td>
+    <td>${r.receiptUrl?`<img src="${r.receiptUrl}" class="receipt-thumb" onclick="window.open('${r.receiptUrl}')">`:'-'}</td>
+    <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('expenses','${r._id}')">刪除</button></td>
+  </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// SUMMARY
+// ════════════════════════════════════════════════════════════════
+function generateSummary(){
+  const start=document.getElementById('sum-start').value;
+  const end=document.getElementById('sum-end').value;
+  if(!start||!end){toast('請選擇開始和結束日期');return;}
+
+  const incList=state.income.filter(r=>r.date>=start&&r.date<=end);
+  const expList=state.expenses.filter(r=>r.date>=start&&r.date<=end);
+  const totalInc=incList.reduce((s,r)=>s+(r.subtotal||0),0);
+  const totalExp=expList.reduce((s,r)=>s+(r.amount||0),0);
+  const profit=totalInc-totalExp;
+  const totalQty=incList.reduce((s,r)=>s+(r.qty||0),0);
+
+  document.getElementById('sum-income').textContent=`NT$${totalInc.toLocaleString()}`;
+  document.getElementById('sum-income-sub').textContent=`共 ${incList.length} 筆`;
+  document.getElementById('sum-expense').textContent=`NT$${totalExp.toLocaleString()}`;
+  document.getElementById('sum-expense-sub').textContent=`共 ${expList.length} 筆`;
+  const profEl=document.getElementById('sum-profit');
+  profEl.textContent=`NT$${profit.toLocaleString()}`;
+  profEl.style.color=profit>=0?'var(--green)':'var(--coral)';
+  document.getElementById('sum-qty').textContent=totalQty+' 組';
+
+  // Payment stats
+  const payStats={};
+  incList.forEach(r=>{
+    if(!payStats[r.pay]) payStats[r.pay]={count:0,total:0};
+    payStats[r.pay].count++;
+    payStats[r.pay].total+=(r.subtotal||0);
+  });
+  const payColors={'現金':'var(--green)','轉帳':'var(--teal)','Line Pay':'var(--purple)','信用卡':'var(--amber)','其他':'var(--muted)'};
+  document.getElementById('pay-stats').innerHTML=Object.entries(payStats).map(([pay,v])=>
+    `<div class="pay-pill"><span style="color:${payColors[pay]||'var(--teal)'}">●</span> ${pay} <span>NT$${v.total.toLocaleString()}</span> <span style="color:var(--muted)">(${v.count}筆)</span></div>`
+  ).join('');
+
+  // Income detail table
+  const payColor={'現金':'tag-green','轉帳':'tag-teal','Line Pay':'tag-purple','信用卡':'tag-amber','其他':'tag-coral'};
+  document.getElementById('sum-income-tbody').innerHTML=incList.length
+    ? incList.map(r=>`<tr>
+        <td>${r.date}</td><td>${r.name}</td>
+        <td><span class="tag tag-teal">${r.type}</span></td>
+        <td>${r.qty} 組</td><td>NT$${(r.unit||0).toLocaleString()}</td>
+        <td style="color:var(--green);font-weight:700">NT$${(r.subtotal||0).toLocaleString()}</td>
+        <td><span class="tag ${payColor[r.pay]||'tag-teal'}">${r.pay}</span></td>
+        <td>${r.note||'—'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:16px">此區間無收入紀錄</td></tr>';
+
+  // Expense detail table
+  document.getElementById('sum-expense-tbody').innerHTML=expList.length
+    ? expList.map(r=>`<tr>
+        <td>${r.date}</td><td>${r.buyer}</td><td>${r.place}</td>
+        <td style="color:var(--coral);font-weight:700">NT$${(r.amount||0).toLocaleString()}</td>
+        <td>${r.pay}</td><td>${r.cat}</td><td>${r.desc||'—'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px">此區間無支出紀錄</td></tr>';
+
+  document.getElementById('summary-result').style.display='block';
+  toast('✅ 匯總完成！');
+}
+
+// ════════════════════════════════════════════════════════════════
+// IG
+// ════════════════════════════════════════════════════════════════
+function calcMale(){
+  const f=parseInt(document.getElementById('ig-female').value)||0;
+  document.getElementById('ig-male').value=Math.max(0,100-f);
+}
+function saveIG(){
+  const female=parseInt(document.getElementById('ig-female').value)||null;
+  const data={
+    date:document.getElementById('ig-date').value,
+    type:document.getElementById('ig-type').value,
+    title:document.getElementById('ig-title').value,
+    url:document.getElementById('ig-url').value,
+    reach:+document.getElementById('ig-reach').value||0,
+    impressions:+document.getElementById('ig-impressions').value||0,
+    likes:+document.getElementById('ig-likes').value||0,
+    comments:+document.getElementById('ig-comments').value||0,
+    shares:+document.getElementById('ig-shares').value||0,
+    saves:+document.getElementById('ig-saves').value||0,
+    newFollowers:+document.getElementById('ig-new-followers').value||0,
+    completion:+document.getElementById('ig-completion').value||null,
+    female: female,
+    male: female!==null ? Math.max(0,100-female) : null,
+    age1:document.getElementById('ig-age1').value,
+    age1Pct:+document.getElementById('ig-age1-pct').value||null,
+    age2:document.getElementById('ig-age2').value,
+    age2Pct:+document.getElementById('ig-age2-pct').value||null,
+    createdAt:Date.now()
+  };
+  if(!data.date){toast('請填入發布日期');return;}
+  if(!data.title){toast('請填入貼文標題');return;}
+  db.collection('ig').add(data).then(()=>{
+    toast('✅ 貼文數據已儲存！');
+    ['ig-date','ig-title','ig-url','ig-reach','ig-impressions','ig-likes','ig-comments',
+     'ig-shares','ig-saves','ig-new-followers','ig-completion','ig-female','ig-male',
+     'ig-age1-pct','ig-age2-pct'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('ig-age1').value='';
+    document.getElementById('ig-age2').value='';
+  });
+}
+function renderIG(){
+  const tbody=document.getElementById('ig-tbody');
+  if(!state.ig.length){
+    tbody.innerHTML='<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr>';
+    ['ig-stat-posts','ig-stat-reach','ig-stat-eng','ig-stat-followers'].forEach(id=>document.getElementById(id).textContent='—');
+    return;
+  }
+  // Stats
+  const total=state.ig.length;
+  const avgReach=Math.round(state.ig.reduce((s,r)=>s+(r.reach||0),0)/total);
+  const avgEng=(state.ig.reduce((s,r)=>{
+    if(!r.reach) return s;
+    return s+(((r.likes||0)+(r.comments||0)+(r.shares||0)+(r.saves||0))/r.reach)*100;
+  },0)/state.ig.filter(r=>r.reach>0).length||0).toFixed(1);
+  const totalFollowers=state.ig.reduce((s,r)=>s+(r.newFollowers||0),0);
+  document.getElementById('ig-stat-posts').textContent=total;
+  document.getElementById('ig-stat-reach').textContent=avgReach.toLocaleString();
+  document.getElementById('ig-stat-eng').textContent=avgEng+'%';
+  document.getElementById('ig-stat-followers').textContent='+'+totalFollowers;
+
+  const typeColor={'Reels':'tag-teal','靜態貼文':'tag-amber','輪播貼文':'tag-purple','限動':'tag-green'};
+  tbody.innerHTML=state.ig.slice().reverse().map(r=>{
+    const eng=r.reach>0?(((r.likes||0)+(r.comments||0)+(r.shares||0)+(r.saves||0))/r.reach*100).toFixed(1)+'%':'—';
+    const genderStr=r.female!==null&&r.female!==undefined?`${r.female}% ♀ / ${r.male}% ♂`:'—';
+    const ageStr=[r.age1&&r.age1Pct?`${r.age1}(${r.age1Pct}%)`:r.age1||'',r.age2&&r.age2Pct?`${r.age2}(${r.age2Pct}%)`:r.age2||''].filter(Boolean).join(' · ')||'—';
+    const titleCell=r.url?`<a href="${r.url}" target="_blank" style="color:var(--teal);text-decoration:none">${r.title||'—'} 🔗</a>`:(r.title||'—');
+    return `<tr>
+      <td>${r.date||'—'}</td>
+      <td><span class="tag ${typeColor[r.type]||'tag-teal'}">${r.type||'—'}</span></td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${titleCell}</td>
+      <td>${(r.reach||0).toLocaleString()}</td>
+      <td>${r.likes||0}</td><td>${r.comments||0}</td><td>${r.shares||0}</td><td>${r.saves||0}</td>
+      <td>+${r.newFollowers||0}</td>
+      <td>${eng}</td>
+      <td>${r.completion!=null?r.completion+'%':'—'}</td>
+      <td style="white-space:nowrap">${genderStr}</td>
+      <td style="white-space:nowrap;font-size:11px">${ageStr}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('ig','${r._id}')">刪除</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// CRM
+// ════════════════════════════════════════════════════════════════
+function showCRMForm(){
+  const f=document.getElementById('crm-form');
+  f.style.display=f.style.display==='none'?'block':'none';
+}
+function saveCRM(){
+  const data={
+    name:document.getElementById('crm-name').value,
+    phone:document.getElementById('crm-phone').value,
+    ig:document.getElementById('crm-ig').value,
+    line:document.getElementById('crm-line').value,
+    source:document.getElementById('crm-source').value,
+    level:document.getElementById('crm-level').value,
+    firstDate:document.getElementById('crm-first-date').value,
+    visits:+document.getElementById('crm-visits').value||0,
+    note:document.getElementById('crm-note').value,
+    createdAt:Date.now()
+  };
+  if(!data.name){toast('請填入姓名');return;}
+  db.collection('customers').add(data).then(()=>{
+    toast('✅ 客人資料已儲存！');
+    ['crm-name','crm-phone','crm-ig','crm-line','crm-visits','crm-note'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('crm-form').style.display='none';
+  });
+}
+function renderCRM(){
+  const q=(document.getElementById('crm-search').value||'').toLowerCase();
+  const list=state.customers.filter(c=>!q||(c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q)||(c.line||'').toLowerCase().includes(q));
+  const tbody=document.getElementById('crm-tbody');
+  if(!list.length){tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr>';return;}
+  const lc={'潛在':'tag-amber','體驗過':'tag-teal','暢滑訂閱':'tag-green','VIP':'tag-purple'};
+  tbody.innerHTML=list.slice().reverse().map(c=>{
+    const lessonCount=state.lessons?state.lessons.filter(l=>l.customerId===c._id).length:0;
+    const lessonBadge=lessonCount>0?`<span class="tag tag-purple">${lessonCount} 堂</span>`:`<span style="color:var(--muted);font-size:11px">尚無</span>`;
+    return `<tr id="crm-row-${c._id}">
+      <td><button class="expand-btn" onclick="toggleLesson('${c._id}','${c.name}')" title="展開上課紀錄">▶</button></td>
+      <td><strong style="color:var(--text);cursor:pointer" onclick="toggleLesson('${c._id}','${c.name}')">${c.name||'—'}</strong></td>
+      <td>${c.phone||'—'}</td><td>${c.ig||'—'}</td><td>${c.line||'—'}</td>
+      <td>${c.source||'—'}</td>
+      <td><span class="tag ${lc[c.level]||'tag-teal'}">${c.level||'—'}</span></td>
+      <td>${c.firstDate||'—'}</td><td>${c.visits||0}</td>
+      <td>${lessonBadge}</td>
+      <td>${c.note||'—'}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('customers','${c._id}')">刪除</button></td>
+    </tr>
+    <tr id="lesson-panel-${c._id}" style="display:none">
+      <td colspan="12" style="padding:0">
+        <div class="lesson-panel">
+          <div class="lesson-panel-header">
+            <span class="lesson-panel-title">📋 ${c.name} 的上課紀錄</span>
+            <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="showLessonForm('${c._id}')">＋ 新增紀錄</button>
+          </div>
+          <div class="lesson-form" id="lesson-form-${c._id}">
+            <div class="lesson-row">
+              <div class="form-group"><label>上課日期</label><input id="lf-date-${c._id}" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
+              <div class="form-group"><label>教練</label><input id="lf-coach-${c._id}" placeholder="Simon"></div>
+              <div class="form-group"><label>上課時長</label>
+                <select id="lf-duration-${c._id}">
+                  <option>30 分鐘</option><option>1 小時</option><option>1.5 小時</option><option>2 小時</option><option>其他</option>
+                </select>
+              </div>
+              <div class="form-group"><label>整體評估</label>
+                <select id="lf-rating-${c._id}">
+                  <option>⭐⭐⭐⭐⭐ 優秀</option><option>⭐⭐⭐⭐ 良好</option><option>⭐⭐⭐ 普通</option><option>⭐⭐ 需加強</option>
+                </select>
+              </div>
+            </div>
+            <div class="lesson-row-full">
+              <div class="form-group"><label>優點 / 表現好的地方</label><textarea id="lf-strength-${c._id}" rows="3" placeholder="例：平衡感不錯，手臂力量足夠，學習意願高"></textarea></div>
+              <div class="form-group"><label>待改進 / 需加強技術</label><textarea id="lf-improve-${c._id}" rows="3" placeholder="例：重心偏後，起乘時膝蓋太直，需要練習彎曲吸震"></textarea></div>
+              <div class="form-group"><label>下次教學建議</label><textarea id="lf-suggest-${c._id}" rows="3" placeholder="例：下次先複習起乘姿勢，再嘗試單手練習"></textarea></div>
+            </div>
+            <div style="display:flex;gap:10px">
+              <button class="btn btn-primary" onclick="saveLesson('${c._id}')">💾 儲存紀錄</button>
+              <button class="btn btn-ghost" onclick="document.getElementById('lesson-form-${c._id}').style.display='none'">取消</button>
+            </div>
+          </div>
+          <div id="lesson-list-${c._id}">
+            <div style="text-align:center;color:var(--muted);padding:16px;font-size:12px">載入中...</div>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Lesson Records ────────────────────────────────────────────────────────────
+const expandedCustomers={};
+
+function toggleLesson(cid, name){
+  const panel=document.getElementById(`lesson-panel-${cid}`);
+  const btn=document.querySelector(`#crm-row-${cid} .expand-btn`);
+  const isOpen=panel.style.display!=='none';
+  if(isOpen){
+    panel.style.display='none';
+    if(btn) btn.textContent='▶';
+    delete expandedCustomers[cid];
+  } else {
+    panel.style.display='table-row';
+    if(btn) btn.textContent='▼';
+    expandedCustomers[cid]=true;
+    loadLessons(cid);
+  }
+}
+
+function showLessonForm(cid){
+  const f=document.getElementById(`lesson-form-${cid}`);
+  f.style.display=f.style.display==='none'?'block':'none';
+}
+
+function saveLesson(cid){
+  const data={
+    customerId:cid,
+    date:document.getElementById(`lf-date-${cid}`).value,
+    coach:document.getElementById(`lf-coach-${cid}`).value,
+    duration:document.getElementById(`lf-duration-${cid}`).value,
+    rating:document.getElementById(`lf-rating-${cid}`).value,
+    strength:document.getElementById(`lf-strength-${cid}`).value,
+    improve:document.getElementById(`lf-improve-${cid}`).value,
+    suggest:document.getElementById(`lf-suggest-${cid}`).value,
+    createdAt:Date.now()
+  };
+  if(!data.date){toast('請填入上課日期');return;}
+  db.collection('lessons').add(data).then(()=>{
+    toast('✅ 上課紀錄已儲存！');
+    [`lf-strength-${cid}`,`lf-improve-${cid}`,`lf-suggest-${cid}`].forEach(id=>document.getElementById(id).value='');
+    document.getElementById(`lesson-form-${cid}`).style.display='none';
+    loadLessons(cid);
+    // update lesson count badge
+    if(!state.lessons) state.lessons=[];
+    state.lessons.push(data);
+    renderCRM();
+    // re-open panel after re-render
+    setTimeout(()=>{
+      const panel=document.getElementById(`lesson-panel-${cid}`);
+      const btn=document.querySelector(`#crm-row-${cid} .expand-btn`);
+      if(panel){panel.style.display='table-row'; if(btn)btn.textContent='▼';}
+      loadLessons(cid);
+    },300);
+  });
+}
+
+function loadLessons(cid){
+  const container=document.getElementById(`lesson-list-${cid}`);
+  if(!container)return;
+  db.collection('lessons').where('customerId','==',cid).get().then(snap=>{
+    const lessons=snap.docs.map(d=>({_id:d.id,...d.data()})).sort((a,b)=>b.date.localeCompare(a.date));
+    // update global state
+    if(!state.lessons) state.lessons=[];
+    state.lessons=state.lessons.filter(l=>l.customerId!==cid).concat(lessons);
+    if(!lessons.length){
+      container.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px;font-size:12px">尚無上課紀錄，點擊「新增紀錄」開始記錄</div>';
+      return;
+    }
+    container.innerHTML=`<table class="lesson-table">
+      <thead><tr><th>日期</th><th>教練</th><th>時長</th><th>評估</th><th>優點</th><th>待改進</th><th>下次建議</th><th></th></tr></thead>
+      <tbody>${lessons.map(l=>`<tr>
+        <td style="white-space:nowrap">${l.date||'—'}</td>
+        <td>${l.coach||'—'}</td>
+        <td>${l.duration||'—'}</td>
+        <td style="white-space:nowrap">${l.rating||'—'}</td>
+        <td style="max-width:180px;white-space:pre-wrap;line-height:1.6">${l.strength||'—'}</td>
+        <td style="max-width:180px;white-space:pre-wrap;line-height:1.6">${l.improve||'—'}</td>
+        <td style="max-width:180px;white-space:pre-wrap;line-height:1.6">${l.suggest||'—'}</td>
+        <td><button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="delLesson('${l._id}','${cid}')">刪除</button></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  });
+}
+
+function delLesson(lid,cid){
+  if(!confirm('確定刪除這筆上課紀錄？'))return;
+  db.collection('lessons').doc(lid).delete().then(()=>{
+    toast('已刪除');
+    loadLessons(cid);
+  });
+}
+
+// also load lessons state for badge counts
+db.collection('lessons').onSnapshot(snap=>{
+  state.lessons=snap.docs.map(d=>({_id:d.id,...d.data()}));
+  if(activePage()==='crm') renderCRM();
+});
+
+// ════════════════════════════════════════════════════════════════
+// REPORT
+// ════════════════════════════════════════════════════════════════
+function generateReport(){
+  const start=document.getElementById('report-start').value;
+  const end=document.getElementById('report-end').value;
+  if(!start||!end){toast('請選擇起訖日期');return;}
+  const incList=state.income.filter(r=>r.date>=start&&r.date<=end);
+  const expList=state.expenses.filter(r=>r.date>=start&&r.date<=end);
+  const totalInc=incList.reduce((s,r)=>s+(r.subtotal||0),0);
+  const totalExp=expList.reduce((s,r)=>s+(r.amount||0),0);
+  const prompt=`以下是 Smart Rabbit Wake Club ${start} 至 ${end} 的營運數據，請幫我生成完整月報分析：
+
+【收入數據】共 ${incList.length} 筆，總計 NT$${totalInc.toLocaleString()}
+${incList.map(r=>`${r.date} | ${r.name} | ${r.type} | ${r.qty}組 × NT$${r.unit} = NT$${r.subtotal} | ${r.pay}`).join('\n')||'尚無收入'}
+
+【支出數據】共 ${expList.length} 筆，總計 NT$${totalExp.toLocaleString()}
+${expList.map(r=>`${r.date} | ${r.buyer} | ${r.place} | NT$${r.amount} | ${r.pay} | ${r.cat} | ${r.desc||''}`).join('\n')||'尚無支出'}
+
+【淨利潤】NT$${(totalInc-totalExp).toLocaleString()}
+
+【客戶數據】
+總客人數：${state.customers.length} 人
+暢滑訂閱：${state.customers.filter(c=>c.level==='暢滑訂閱').length} 人
+VIP：${state.customers.filter(c=>c.level==='VIP').length} 人
+
+品牌：Smart Rabbit Wake Club（雙溪碼頭）
+核心產品：暢滑方案 NT$9,990/月、單次體驗 NT$1,200–1,700
+
+請分析：
+1. 收入結構分析（哪種收入類型貢獻最多？）
+2. 支出分析（哪類支出最高？有沒有可優化的地方？）
+3. 現金流健康度評估
+4. 客源與轉換分析
+5. 下一期改善建議（行銷、成本控制、客戶留存三個面向）`;
+
+  document.getElementById('report-prompt').textContent=prompt;
+  document.getElementById('report-box').style.display='block';
+  toast('✅ 月報指令已生成！');
+}
+
+// ════════════════════════════════════════════════════════════════
+// ADS
+// ════════════════════════════════════════════════════════════════
+let chartAdsBar, chartAdsPie;
+function saveAd(){
+  const spend=+document.getElementById('ad-spend').value||0;
+  const clicks=+document.getElementById('ad-clicks').value||0;
+  const followers=+document.getElementById('ad-followers').value||0;
+  const revenue=+document.getElementById('ad-revenue').value||0;
+  const dateStart=document.getElementById('ad-date-start').value;
+  const dateEnd=document.getElementById('ad-date-end').value;
+  if(!dateStart||!dateEnd){toast('請填入投放開始和結束日期');return;}
+  // Calculate days
+  const days=Math.round((new Date(dateEnd)-new Date(dateStart))/(1000*60*60*24))+1;
+  const data={
+    dateStart, dateEnd, days,
+    title:document.getElementById('ad-title').value,
+    url:document.getElementById('ad-url').value,
+    type:document.getElementById('ad-type').value,
+    goal:document.getElementById('ad-goal').value,
+    spend, clicks, followers,
+    reach:+document.getElementById('ad-reach').value||0,
+    impressions:+document.getElementById('ad-impressions').value||0,
+    dm:+document.getElementById('ad-dm').value||0,
+    convert:+document.getElementById('ad-convert').value||0,
+    revenue,
+    roas:spend>0?+(revenue/spend).toFixed(2):0,
+    cpc:clicks>0?Math.round(spend/clicks):0,
+    desc:document.getElementById('ad-desc').value,
+    createdAt:Date.now()
+  };
+  db.collection('ads').add(data).then(()=>{
+    toast('✅ 廣告數據已儲存！');
+    ['ad-date-start','ad-date-end','ad-title','ad-url','ad-spend','ad-reach','ad-impressions','ad-clicks','ad-followers','ad-dm','ad-convert','ad-revenue','ad-desc'].forEach(id=>document.getElementById(id).value='');
+  });
+}
+function renderAds(){
+  const tbody=document.getElementById('ads-tbody');
+  if(!state.ads.length){tbody.innerHTML='<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">尚無投放紀錄</td></tr>';return;}
+  tbody.innerHTML=state.ads.slice().reverse().map(r=>{
+    const rc=r.roas>=2?'var(--green)':r.roas>=1?'var(--amber)':'var(--coral)';
+    const dateCell=r.dateStart?`${r.dateStart}<br><span style="color:var(--muted);font-size:11px">→ ${r.dateEnd}</span>`:(r.date||'—');
+    const daysCell=r.days?`${r.days}天`:'—';
+    const titleCell=r.url?`<a href="${r.url}" target="_blank" style="color:var(--teal);text-decoration:none">${r.title||'—'} 🔗</a>`:(r.title||'—');
+    return `<tr>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${titleCell}</td>
+      <td style="white-space:nowrap">${dateCell}</td>
+      <td>${daysCell}</td>
+      <td>${r.type||'—'}</td><td>${r.goal||'—'}</td>
+      <td>NT$${(r.spend||0).toLocaleString()}</td><td>${(r.reach||0).toLocaleString()}</td>
+      <td>${r.clicks||0}</td><td>${r.dm||0}</td><td>${r.convert||0}</td>
+      <td>NT$${(r.revenue||0).toLocaleString()}</td>
+      <td style="color:${rc};font-weight:700">${r.roas||0}x</td>
+      <td>${r.cpc?'NT$'+r.cpc:'—'}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('ads','${r._id}')">刪除</button></td>
+    </tr>`;
+  }).join('');
+
+  if(chartAdsBar) chartAdsBar.destroy();
+  if(chartAdsPie) chartAdsPie.destroy();
+  const barCtx=document.getElementById('chart-ads-bar');
+  const pieCtx=document.getElementById('chart-ads-pie');
+  const recent=state.ads.slice(-6);
+  if(barCtx) chartAdsBar=new Chart(barCtx,{type:'bar',data:{
+    labels:recent.map(r=>r.dateStart||r.date||''),
+    datasets:[{label:'花費',data:recent.map(r=>r.spend||0),backgroundColor:'#FF5C4D80'},{label:'成交金額',data:recent.map(r=>r.revenue||0),backgroundColor:'#1DE09A80'}]
+  },options:{plugins:{legend:{labels:{color:'#a0a8bc'}}},scales:{x:{ticks:{color:'#5a6180'},grid:{color:'#2a2f3d'}},y:{ticks:{color:'#5a6180'},grid:{color:'#2a2f3d'}}}}});
+  const reels=state.ads.filter(r=>r.type==='Reels 廣告').length;
+  const posts=state.ads.filter(r=>r.type==='貼文廣告').length;
+  const stories=state.ads.filter(r=>r.type==='限動廣告').length;
+  if(pieCtx) chartAdsPie=new Chart(pieCtx,{type:'doughnut',data:{
+    labels:['Reels','貼文','限動'],
+    datasets:[{data:[reels,posts,stories],backgroundColor:['#00C9D4','#7C5CFC','#FFB347'],borderWidth:0}]
+  },options:{plugins:{legend:{labels:{color:'#a0a8bc',font:{size:11}}}},cutout:'60%'}});
+}
+
+// ════════════════════════════════════════════════════════════════
+// DELETE
+// ════════════════════════════════════════════════════════════════
+function del(col,id){
+  if(!confirm('確定刪除這筆紀錄？'))return;
+  db.collection(col).doc(id).delete().then(()=>toast('已刪除'));
+}
+
+// ════════════════════════════════════════════════════════════════
+// BOOKING
+// ════════════════════════════════════════════════════════════════
+let calYear, calMonth;
+(function(){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();})();
+
+function toggleBKForm(){
+  const f=document.getElementById('bk-form');
+  f.style.display=f.style.display==='none'||f.style.display===''?'block':'none';
+}
+
+function onBKStartChange(){
+  const v=document.getElementById('bk-start').value;
+  document.getElementById('bk-start-custom').style.display=v==='custom'?'block':'none';
+  if(v!=='custom') calcBKDur();
+}
+function onBKEndChange(){
+  const v=document.getElementById('bk-end').value;
+  document.getElementById('bk-end-custom').style.display=v==='custom'?'block':'none';
+  if(v!=='custom') calcBKDur();
+}
+function fmtTime(el){
+  let v=el.value.replace(/[^0-9:]/g,'');
+  if(v.length===2&&!v.includes(':')) v=v+':';
+  el.value=v;
+}
+function getBKTime(selId,customId){
+  const v=document.getElementById(selId).value;
+  return v==='custom'?document.getElementById(customId).value.trim():v;
+}
+function toMins(t){
+  if(!t||!t.includes(':')) return null;
+  const [h,m]=t.split(':').map(Number);
+  if(isNaN(h)||isNaN(m)||h>23||m>59) return null;
+  return h*60+m;
+}
+function calcBKDur(){
+  const s=getBKTime('bk-start','bk-start-custom');
+  const e=getBKTime('bk-end','bk-end-custom');
+  const tag=document.getElementById('bk-duration-tag');
+  if(!s||!e){tag.innerHTML='';return;}
+  const sm=toMins(s),em=toMins(e);
+  if(sm===null||em===null){tag.innerHTML='<span class="duration-tag dur-err">⚠ 時間格式錯誤（請用 HH:MM）</span>';return;}
+  const diff=em-sm;
+  if(diff<=0){tag.innerHTML='<span class="duration-tag dur-err">⚠ 結束時間必須晚於開始時間</span>';return;}
+  const hrs=Math.floor(diff/60),mins=diff%60;
+  let label=hrs>0?`${hrs} 小時`:'';
+  if(mins>0) label+=(hrs>0?' ':'') + `${mins} 分鐘`;
+  const cls=diff<60?'dur-warn':'dur-ok';
+  tag.innerHTML=`<span class="duration-tag ${cls}">✓ 共 ${label}</span>`;
+}
+
+function saveBooking(){
+  const name=document.getElementById('bk-name').value.trim();
+  const date=document.getElementById('bk-date').value;
+  const startTime=getBKTime('bk-start','bk-start-custom');
+  const endTime=getBKTime('bk-end','bk-end-custom');
+  if(!name){toast('請填入客人姓名');return;}
+  if(!date){toast('請填入預約日期');return;}
+  if(!startTime||!endTime){toast('請選擇時段');return;}
+  const sm=toMins(startTime),em=toMins(endTime);
+  if(!sm||!em||em<=sm){toast('時段設定有誤，請重新確認');return;}
+  const data={
+    name, date,
+    phone:document.getElementById('bk-phone').value,
+    startTime, endTime,
+    pax:+document.getElementById('bk-pax').value||1,
+    plan:document.getElementById('bk-plan').value,
+    source:document.getElementById('bk-source').value,
+    note:document.getElementById('bk-note').value,
+    status:'已確認',
+    createdAt:Date.now()
+  };
+  db.collection('bookings').add(data).then(docRef=>{
+    toast('✅ 預約已確認！');
+    syncToGCal({...data, _id:docRef.id});
+    toggleBKForm();
+    ['bk-name','bk-phone','bk-note'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('bk-pax').value='1';
+    document.getElementById('bk-start').value='';
+    document.getElementById('bk-end').value='';
+    document.getElementById('bk-start-custom').style.display='none';
+    document.getElementById('bk-end-custom').style.display='none';
+    document.getElementById('bk-duration-tag').innerHTML='';
+  });
+}
+
+function updateBookingStatus(id, newStatus){
+  db.collection('bookings').doc(id).update({status:newStatus}).then(()=>{
+    toast(`✅ 狀態已更新為「${newStatus}」`);
+    if(newStatus==='已確認'){
+      const bk=state.bookings.find(b=>b._id===id);
+      if(bk) syncToGCal(bk);
+    }
+  });
+}
+
+function renderBookings(){
+  const filter=document.getElementById('bk-filter').value;
+  const list=filter?state.bookings.filter(b=>b.status===filter):state.bookings;
+  const sorted=[...list].sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime));
+  const el=document.getElementById('bk-list');
+  if(!sorted.length){
+    el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px;font-size:12px">尚無預約紀錄</div>';
+    return;
+  }
+  el.innerHTML=sorted.map(b=>{
+    const d=new Date(b.date+'T00:00:00');
+    const day=d.getDate();
+    const mon=(d.getMonth()+1)+'月';
+    const statusClass=b.status==='已確認'?'tag-confirmed':b.status==='已取消'?'tag-cancelled':'tag-pending';
+    const statusIcon=b.status==='已確認'?'✓ ':b.status==='已取消'?'✕ ':'⏳ ';
+    const actionBtns=b.status==='待確認'
+      ?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:var(--green);border-color:var(--green)" onclick="updateBookingStatus('${b._id}','已確認')">✓ 確認</button>
+         <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="updateBookingStatus('${b._id}','已取消')">✕ 取消</button>`
+      :b.status==='已確認'
+      ?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:#4A9EF5;border-color:#4A9EF5" onclick="toast('📅 已同步至 Google Calendar')">📅</button>
+         <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="updateBookingStatus('${b._id}','已取消')">✕</button>`
+      :`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="del('bookings','${b._id}')">刪除</button>`;
+    return `<div class="bk-item">
+      <div class="bk-date"><div class="day">${day}</div><div class="mon">${mon}</div></div>
+      <div class="bk-info">
+        <div class="bk-name">${b.name} <span style="font-size:11px;color:var(--muted);font-weight:400">× ${b.pax}人</span></div>
+        <div class="bk-meta">
+          <span>🕐 ${b.startTime}–${b.endTime}</span>
+          <span>·</span><span>${b.plan||'—'}</span>
+          <span>·</span><span>${b.source||'—'}</span>
+          ${b.note?`<span>·</span><span>${b.note}</span>`:''}
+        </div>
+      </div>
+      <span class="tag ${statusClass}" style="white-space:nowrap">${statusIcon}${b.status}</span>
+      <div style="display:flex;gap:6px">${actionBtns}</div>
+    </div>`;
+  }).join('');
+  updateMiniCal();
+}
+
+function updateBookingStats(){
+  const now=new Date();
+  const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const thisMonth=state.bookings.filter(b=>b.date&&b.date.startsWith(ym));
+  document.getElementById('bk-stat-total').textContent=thisMonth.length;
+  document.getElementById('bk-stat-confirmed').textContent=thisMonth.filter(b=>b.status==='已確認').length;
+  document.getElementById('bk-stat-pending').textContent=thisMonth.filter(b=>b.status==='待確認').length;
+  document.getElementById('bk-stat-cancelled').textContent=thisMonth.filter(b=>b.status==='已取消').length;
+}
+
+// ── Mini Calendar ──────────────────────────────────────────────
+function renderMiniCal(){
+  const months=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  document.getElementById('cal-title').textContent=`${calYear} ${months[calMonth]}`;
+  const grid=document.getElementById('cal-grid');
+  const dows=['日','一','二','三','四','五','六'];
+  let html=dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const first=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date();
+  const bkDates=new Set(state.bookings.filter(b=>b.status!=='已取消').map(b=>b.date));
+  for(let i=0;i<first;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    const hasBK=bkDates.has(dateStr);
+    html+=`<div class="cal-day${isToday?' today':''}${hasBK?' has-bk':''}">${d}</div>`;
+  }
+  grid.innerHTML=html;
+}
+function updateMiniCal(){renderMiniCal();}
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderMiniCal();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderMiniCal();}
+
+// ── Google Calendar ────────────────────────────────────────────
+const GCAL_CLIENT_ID='YOUR_GOOGLE_CLIENT_ID';
+const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events';
+let gcalToken=null;
+
+function handleGCalAuth(){
+  if(gcalToken){
+    toast('📅 已授權，可直接同步');
+    return;
+  }
+  if(GCAL_CLIENT_ID==='YOUR_GOOGLE_CLIENT_ID'){
+    alert('⚠️ 尚未設定 Google Client ID\n\n請先完成 Google Cloud Console 設定，\n將 Client ID 填入程式碼中的 GCAL_CLIENT_ID 變數。');
+    return;
+  }
+  const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${GCAL_CLIENT_ID}&redirect_uri=${encodeURIComponent(location.href)}&response_type=token&scope=${encodeURIComponent(GCAL_SCOPE)}`;
+  window.open(url,'gcal_auth','width=500,height=600');
+}
+
+// Handle OAuth redirect token
+(function(){
+  const hash=location.hash;
+  if(hash&&hash.includes('access_token')){
+    const params=new URLSearchParams(hash.substring(1));
+    gcalToken=params.get('access_token');
+    if(gcalToken){
+      history.replaceState(null,null,' ');
+      updateGCalUI(true);
+      toast('✅ Google Calendar 授權成功！');
+    }
+  }
+})();
+
+function updateGCalUI(connected){
+  const btn=document.getElementById('gcal-auth-btn');
+  const label=document.getElementById('gcal-account-label');
+  const statusLabel=document.getElementById('gcal-status-label');
+  const dot=document.getElementById('gcal-dot-form');
+  if(connected){
+    btn.textContent='已連結 ✓';
+    btn.style.background='var(--green)';
+    label.textContent='Google Calendar 已連結';
+    statusLabel.textContent='預約確認後將自動同步';
+    if(dot){dot.textContent='已授權';dot.classList.add('connected');}
+  }
+}
+
+function syncToGCal(bk){
+  if(!gcalToken){return;}
+  const startDT=`${bk.date}T${bk.startTime}:00+08:00`;
+  const endDT=`${bk.date}T${bk.endTime}:00+08:00`;
+  const event={
+    summary:`🏄 Smart Rabbit 預約 — ${bk.name}`,
+    description:`客人：${bk.name}\n電話：${bk.phone||'—'}\n人數：${bk.pax}人\n方案：${bk.plan}\n來源：${bk.source}\n備註：${bk.note||'—'}`,
+    start:{dateTime:startDT,timeZone:'Asia/Taipei'},
+    end:{dateTime:endDT,timeZone:'Asia/Taipei'}
+  };
+  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+    method:'POST',
+    headers:{Authorization:'Bearer '+gcalToken,'Content-Type':'application/json'},
+    body:JSON.stringify(event)
+  }).then(r=>{
+    if(r.ok) toast('📅 已同步至 Google Calendar！');
+    else toast('⚠️ Google Calendar 同步失敗，請重新授權');
+  }).catch(()=>toast('⚠️ 網路錯誤，無法同步 Google Calendar'));
+}
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+// Set today as default date for income/expense forms
+const today=new Date().toISOString().split('T')[0];
+['inc-date','exp-date','ad-date-start','ad-date-end','bk-date'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.value=today;
+});
+renderMiniCal();
+updateDashboard();
+</script>
+</body>
+</html>
