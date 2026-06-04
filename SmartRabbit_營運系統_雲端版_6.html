@@ -1663,6 +1663,7 @@ function batchSyncToGCal(){
   });
 }
 
+function syncToGCal(bk){
   if(!gcalToken){return;}
   const startDT=`${bk.date}T${bk.startTime}:00+08:00`;
   const endDT=`${bk.date}T${bk.endTime}:00+08:00`;
