@@ -127,7 +127,20 @@ tr:hover td{background:var(--bg3);color:var(--text)}
 .receipt-upload{background:var(--bg3);border:1px dashed var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:11px;color:var(--muted);transition:border .2s}
 .receipt-upload:hover{border-color:var(--teal);color:var(--teal)}
 
-/* Booking module */
+/* Gantt view */
+.gantt-th-time{width:68px;flex-shrink:0;padding:7px 8px;font-size:10px;color:var(--muted);border-right:1px solid var(--border)}
+.gantt-th-day{width:100px;flex-shrink:0;padding:7px 6px;text-align:center;border-right:1px solid var(--border);font-size:11px;font-weight:700}
+.gantt-th-day.today{color:var(--teal)}
+.gantt-th-day .gdow{font-size:10px;color:var(--muted);font-weight:400;margin-top:1px}
+.gantt-th-day.today .gdow{color:var(--teal)}
+.gantt-row{display:flex;border-bottom:1px solid var(--border)}
+.gantt-row.half-hour{background:var(--bg)}
+.gantt-td-time{width:68px;flex-shrink:0;padding:4px 8px;font-size:10px;color:var(--muted);border-right:1px solid var(--border);display:flex;align-items:center;white-space:nowrap}
+.gantt-td-cell{width:100px;flex-shrink:0;height:26px;border-right:1px solid var(--border);position:relative}
+.gantt-td-cell.today-col{background:#00C9D408}
+.gantt-block{position:absolute;left:2px;right:2px;top:1px;border-radius:3px;padding:2px 5px;font-size:10px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;z-index:1;cursor:pointer;background:#1DE09A25;color:#1DE09A;border:1px solid #1DE09A40}
+.gantt-block.cancelled{background:#FF5C4D20;color:var(--coral);border-color:#FF5C4D40;text-decoration:line-through}
+</style>
 .booking-status-bar{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
 .bk-stat{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 20px;min-width:120px}
 .bk-stat .val{font-family:var(--font-head);font-size:26px;letter-spacing:1px}
@@ -571,13 +584,29 @@ tr:hover td{background:var(--bg3);color:var(--text)}
 <!-- ═══════════════════════════════ BOOKING ═══════════════════════════════ -->
 <div class="page" id="page-booking">
   <div class="page-title">預約管理</div>
-  <div class="page-sub">手動輸入預約，確認後自動同步至 Google Calendar</div>
+  <div class="page-sub">手動輸入預約，自動同步至 Google Calendar</div>
 
   <div class="booking-status-bar">
     <div class="bk-stat"><div class="val" id="bk-stat-total" style="color:var(--teal)">0</div><div class="lbl">本月預約</div></div>
-    <div class="bk-stat"><div class="val" id="bk-stat-confirmed" style="color:var(--green)">0</div><div class="lbl">已確認</div></div>
-    <div class="bk-stat"><div class="val" id="bk-stat-pending" style="color:var(--amber)">0</div><div class="lbl">待確認</div></div>
+    <div class="bk-stat"><div class="val" id="bk-stat-pax" style="color:var(--green)">0</div><div class="lbl">本月人次</div></div>
+    <div class="bk-stat"><div class="val" id="bk-stat-today" style="color:var(--amber)">0</div><div class="lbl">今日預約</div></div>
     <div class="bk-stat"><div class="val" id="bk-stat-cancelled" style="color:var(--coral)">0</div><div class="lbl">已取消</div></div>
+  </div>
+
+  <!-- 週視圖 -->
+  <div class="card" style="margin-bottom:20px;padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700" id="gantt-range-title"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="ganttShift(-7)">‹ 上週</button>
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="ganttToday()">今天</button>
+        <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="ganttShift(7)">下週 ›</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <div id="gantt-header" style="display:flex;background:var(--bg3);border-bottom:1px solid var(--border);min-width:max-content;position:sticky;top:0;z-index:2"></div>
+      <div id="gantt-body" style="max-height:400px;overflow-y:auto;min-width:max-content"></div>
+    </div>
   </div>
 
   <div class="two-col" style="align-items:start">
@@ -585,13 +614,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
       <div class="top-bar">
         <div class="section-title" style="margin:0">預約列表</div>
         <div style="display:flex;gap:10px;align-items:center">
-          <select id="bk-filter" onchange="renderBookings()" style="width:auto;padding:7px 12px;font-size:12px">
-            <option value="">全部狀態</option>
-            <option value="待確認">待確認</option>
-            <option value="已確認">已確認</option>
-            <option value="已取消">已取消</option>
-          </select>
-          <button class="btn btn-ghost" style="font-size:12px;color:#4A9EF5;border-color:#4A9EF5" onclick="batchSyncToGCal()">📅 全部同步至 Google Calendar</button>
+          <button class="btn btn-ghost" style="font-size:12px;color:#4A9EF5;border-color:#4A9EF5" onclick="batchSyncToGCal()">📅 全部同步 Google Calendar</button>
           <button class="btn btn-primary" onclick="toggleBKForm()">＋ 新增預約</button>
         </div>
       </div>
@@ -601,7 +624,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
           <div class="gcal-icon">📅</div>
           <div class="gcal-info">
             <div class="gcal-title">Google Calendar 同步</div>
-            <div class="gcal-sub">確認後自動新增行事曆事件到 Simon 的帳號</div>
+            <div class="gcal-sub">儲存後自動新增行事曆事件到 Simon 的帳號</div>
           </div>
           <span class="gcal-dot" id="gcal-dot-form">尚未授權</span>
         </div>
@@ -654,8 +677,8 @@ tr:hover td{background:var(--bg3);color:var(--text)}
           <div class="form-group" style="grid-column:span 2"><label>備註</label><input id="bk-note" placeholder="選填"></div>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
-          <button class="btn btn-ghost" onclick="toggleBKForm()">取消</button>
-          <button class="btn btn-primary" onclick="saveBooking()">✓ 確認預約並同步 Google Calendar</button>
+          <button class="btn btn-ghost" onclick="cancelBKForm()">取消</button>
+          <button class="btn btn-primary" id="bk-save-btn" onclick="saveBooking()">✓ 儲存並同步 Google Calendar</button>
         </div>
       </div>
 
@@ -685,7 +708,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
           <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" id="gcal-auth-btn" onclick="handleGCalAuth()">授權連結</button>
         </div>
         <div style="font-size:11px;color:var(--muted);line-height:1.8">
-          授權後，每筆狀態為「已確認」的預約<br>將自動建立 Google Calendar 事件。<br>Simon 手機也會收到行事曆提醒。
+          授權後，每筆預約將自動建立<br>Google Calendar 事件。
         </div>
       </div>
     </div>
@@ -1431,9 +1454,55 @@ function del(col,id){
 let calYear, calMonth;
 (function(){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();})();
 
+let editingBookingId = null;
+
 function toggleBKForm(){
+  editingBookingId = null;
   const f=document.getElementById('bk-form');
   f.style.display=f.style.display==='none'||f.style.display===''?'block':'none';
+  document.getElementById('bk-save-btn').textContent='✓ 儲存並同步 Google Calendar';
+}
+
+function cancelBKForm(){
+  editingBookingId = null;
+  document.getElementById('bk-form').style.display='none';
+  document.getElementById('bk-save-btn').textContent='✓ 儲存並同步 Google Calendar';
+}
+
+function editBooking(id){
+  const bk=state.bookings.find(b=>b._id===id);
+  if(!bk) return;
+  editingBookingId = id;
+  // fill form
+  document.getElementById('bk-name').value=bk.name||'';
+  document.getElementById('bk-phone').value=bk.phone||'';
+  document.getElementById('bk-date').value=bk.date||'';
+  document.getElementById('bk-pax').value=bk.pax||1;
+  document.getElementById('bk-note').value=bk.note||'';
+  // plan
+  const planEl=document.getElementById('bk-plan');
+  for(let i=0;i<planEl.options.length;i++){if(planEl.options[i].value===bk.plan||planEl.options[i].text===bk.plan){planEl.selectedIndex=i;break;}}
+  // source
+  const srcEl=document.getElementById('bk-source');
+  for(let i=0;i<srcEl.options.length;i++){if(srcEl.options[i].value===bk.source||srcEl.options[i].text===bk.source){srcEl.selectedIndex=i;break;}}
+  // start time
+  const startSel=document.getElementById('bk-start');
+  const startCustom=document.getElementById('bk-start-custom');
+  let startFound=false;
+  for(let i=0;i<startSel.options.length;i++){if(startSel.options[i].value===bk.startTime){startSel.selectedIndex=i;startFound=true;break;}}
+  if(!startFound){startSel.value='custom';startCustom.style.display='block';startCustom.value=bk.startTime||'';}
+  else{startCustom.style.display='none';}
+  // end time
+  const endSel=document.getElementById('bk-end');
+  const endCustom=document.getElementById('bk-end-custom');
+  let endFound=false;
+  for(let i=0;i<endSel.options.length;i++){if(endSel.options[i].value===bk.endTime){endSel.selectedIndex=i;endFound=true;break;}}
+  if(!endFound){endSel.value='custom';endCustom.style.display='block';endCustom.value=bk.endTime||'';}
+  else{endCustom.style.display='none';}
+  calcBKDur();
+  document.getElementById('bk-form').style.display='block';
+  document.getElementById('bk-save-btn').textContent='✓ 更新預約';
+  document.getElementById('bk-form').scrollIntoView({behavior:'smooth'});
 }
 
 function onBKStartChange(){
@@ -1496,12 +1565,9 @@ function saveBooking(){
     source:document.getElementById('bk-source').value,
     note:document.getElementById('bk-note').value,
     status:'已確認',
-    createdAt:Date.now()
   };
-  db.collection('bookings').add(data).then(docRef=>{
-    toast('✅ 預約已確認！');
-    syncToGCal({...data, _id:docRef.id});
-    toggleBKForm();
+  const clearForm=()=>{
+    cancelBKForm();
     ['bk-name','bk-phone','bk-note'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('bk-pax').value='1';
     document.getElementById('bk-start').value='';
@@ -1509,45 +1575,53 @@ function saveBooking(){
     document.getElementById('bk-start-custom').style.display='none';
     document.getElementById('bk-end-custom').style.display='none';
     document.getElementById('bk-duration-tag').innerHTML='';
-  });
+  };
+  if(editingBookingId){
+    db.collection('bookings').doc(editingBookingId).update(data).then(()=>{
+      toast('✅ 預約已更新！');
+      syncToGCal({...data, _id:editingBookingId});
+      editingBookingId=null;
+      clearForm();
+    });
+  } else {
+    data.createdAt=Date.now();
+    db.collection('bookings').add(data).then(docRef=>{
+      toast('✅ 預約已儲存！');
+      syncToGCal({...data, _id:docRef.id});
+      clearForm();
+    });
+  }
 }
 
-function updateBookingStatus(id, newStatus){
-  db.collection('bookings').doc(id).update({status:newStatus}).then(()=>{
-    toast(`✅ 狀態已更新為「${newStatus}」`);
-    if(newStatus==='已確認'){
-      const bk=state.bookings.find(b=>b._id===id);
-      if(bk) syncToGCal(bk);
-    }
-  });
+function cancelBooking(id){
+  if(!confirm('確定取消這筆預約？'))return;
+  db.collection('bookings').doc(id).update({status:'已取消'}).then(()=>toast('已取消預約'));
 }
 
 function renderBookings(){
-  const filter=document.getElementById('bk-filter').value;
-  const list=filter?state.bookings.filter(b=>b.status===filter):state.bookings;
-  const sorted=[...list].sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime));
+  const list=[...state.bookings].sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime));
   const el=document.getElementById('bk-list');
-  if(!sorted.length){
+  if(!list.length){
     el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px;font-size:12px">尚無預約紀錄</div>';
-    return;
+    renderGantt(); return;
   }
-  el.innerHTML=sorted.map(b=>{
+  el.innerHTML=list.map(b=>{
     const d=new Date(b.date+'T00:00:00');
     const day=d.getDate();
     const mon=(d.getMonth()+1)+'月';
-    const statusClass=b.status==='已確認'?'tag-confirmed':b.status==='已取消'?'tag-cancelled':'tag-pending';
-    const statusIcon=b.status==='已確認'?'✓ ':b.status==='已取消'?'✕ ':'⏳ ';
-    const actionBtns=b.status==='待確認'
-      ?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:var(--green);border-color:var(--green)" onclick="updateBookingStatus('${b._id}','已確認')">✓ 確認</button>
-         <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="updateBookingStatus('${b._id}','已取消')">✕ 取消</button>`
-      :b.status==='已確認'
-      ?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:#4A9EF5;border-color:#4A9EF5" onclick="syncOneBooking('${b._id}')">📅</button>
-         <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="updateBookingStatus('${b._id}','已取消')">✕</button>`
-      :`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="del('bookings','${b._id}')">刪除</button>`;
-    return `<div class="bk-item">
+    const isCancelled=b.status==='已取消';
+    const statusBadge=isCancelled
+      ?`<span class="tag tag-cancelled">✕ 已取消</span>`
+      :`<span class="tag tag-confirmed">✓ 確認</span>`;
+    const actionBtn=isCancelled
+      ?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="del('bookings','${b._id}')">刪除</button>`
+      :`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:var(--amber);border-color:var(--amber)" onclick="editBooking('${b._id}')">✏️ 編輯</button>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="cancelBooking('${b._id}')">✕ 取消</button>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:#4A9EF5;border-color:#4A9EF5" onclick="syncOneBooking('${b._id}')">📅</button>`;
+    return `<div class="bk-item" style="${isCancelled?'opacity:.5':''}">
       <div class="bk-date"><div class="day">${day}</div><div class="mon">${mon}</div></div>
       <div class="bk-info">
-        <div class="bk-name">${b.name} <span style="font-size:11px;color:var(--muted);font-weight:400">× ${b.pax}人</span></div>
+        <div class="bk-name">${b.name} <span style="font-size:11px;color:var(--muted);font-weight:400">× ${b.pax||1}人</span></div>
         <div class="bk-meta">
           <span>🕐 ${b.startTime}–${b.endTime}</span>
           <span>·</span><span>${b.plan||'—'}</span>
@@ -1555,24 +1629,82 @@ function renderBookings(){
           ${b.note?`<span>·</span><span>${b.note}</span>`:''}
         </div>
       </div>
-      <span class="tag ${statusClass}" style="white-space:nowrap">${statusIcon}${b.status}</span>
-      <div style="display:flex;gap:6px">${actionBtns}</div>
+      ${statusBadge}
+      <div style="display:flex;gap:6px">${actionBtn}</div>
     </div>`;
   }).join('');
+  renderGantt();
   updateMiniCal();
 }
 
 function updateBookingStats(){
   const now=new Date();
   const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const thisMonth=state.bookings.filter(b=>b.date&&b.date.startsWith(ym));
+  const td=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const thisMonth=state.bookings.filter(b=>b.date&&b.date.startsWith(ym)&&b.status!=='已取消');
+  const todayBks=state.bookings.filter(b=>b.date===td&&b.status!=='已取消');
+  const cancelled=state.bookings.filter(b=>b.date&&b.date.startsWith(ym)&&b.status==='已取消');
   document.getElementById('bk-stat-total').textContent=thisMonth.length;
-  document.getElementById('bk-stat-confirmed').textContent=thisMonth.filter(b=>b.status==='已確認').length;
-  document.getElementById('bk-stat-pending').textContent=thisMonth.filter(b=>b.status==='待確認').length;
-  document.getElementById('bk-stat-cancelled').textContent=thisMonth.filter(b=>b.status==='已取消').length;
+  document.getElementById('bk-stat-pax').textContent=thisMonth.reduce((s,b)=>s+(b.pax||1),0);
+  document.getElementById('bk-stat-today').textContent=todayBks.length;
+  document.getElementById('bk-stat-cancelled').textContent=cancelled.length;
 }
 
-// ── Mini Calendar ──────────────────────────────────────────────
+// ── Gantt View ─────────────────────────────────────────────────
+const GANTT_SLOT_H=26, GANTT_START=8, GANTT_END=19, GANTT_SLOTS=(GANTT_END-GANTT_START)*2;
+const GANTT_DOWS=['日','一','二','三','四','五','六'];
+let ganttStart=null;
+(function(){ganttStart=new Date();ganttStart.setHours(0,0,0,0);ganttStart.setDate(ganttStart.getDate()-ganttStart.getDay());})();
+
+function ganttShift(d){ganttStart=new Date(ganttStart);ganttStart.setDate(ganttStart.getDate()+d);renderGantt();}
+function ganttToday(){ganttStart=new Date();ganttStart.setHours(0,0,0,0);ganttStart.setDate(ganttStart.getDate()-ganttStart.getDay());renderGantt();}
+
+function ganttDateStr(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+function renderGantt(){
+  if(!document.getElementById('gantt-header')) return;
+  const todayD=new Date(); todayD.setHours(0,0,0,0);
+  const days=[];
+  for(let i=0;i<7;i++){const d=new Date(ganttStart);d.setDate(d.getDate()+i);days.push(d);}
+  const s=days[0],e=days[6];
+  document.getElementById('gantt-range-title').textContent=`${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}`;
+
+  // header
+  let hh=`<div class="gantt-th-time"></div>`;
+  days.forEach(d=>{
+    const isT=d.getTime()===todayD.getTime();
+    hh+=`<div class="gantt-th-day${isT?' today':''}"><div>${d.getMonth()+1}/${d.getDate()}</div><div class="gdow">${GANTT_DOWS[d.getDay()]}</div></div>`;
+  });
+  document.getElementById('gantt-header').innerHTML=hh;
+
+  // body
+  let bh='';
+  for(let si=0;si<GANTT_SLOTS;si++){
+    const totalMins=(GANTT_START*60)+(si*30);
+    const hh2=Math.floor(totalMins/60),mm=totalMins%60;
+    const timeLabel=mm===0?`${String(hh2).padStart(2,'0')}:00`:'';
+    bh+=`<div class="gantt-row${mm===30?' half-hour':''}">`;
+    bh+=`<div class="gantt-td-time">${timeLabel}</div>`;
+    days.forEach(d=>{
+      const ds=ganttDateStr(d);
+      const isT=d.getTime()===todayD.getTime();
+      let blocks='';
+      state.bookings.filter(b=>b.date===ds&&b.status!=='已取消').forEach(b=>{
+        const bStart=toMins(b.startTime||b.start||'');
+        const bEnd=toMins(b.endTime||b.end||'');
+        if(bStart===totalMins){
+          const dur=bEnd-bStart;
+          const ht=Math.round((dur/30)*GANTT_SLOT_H)-2;
+          blocks+=`<div class="gantt-block" style="height:${ht}px" title="${b.name} ${b.startTime}–${b.endTime} ${b.pax}人\n${b.plan||''}">${b.name} (${b.pax||1}位)</div>`;
+        }
+      });
+      bh+=`<div class="gantt-td-cell${isT?' today-col':''}">${blocks}</div>`;
+    });
+    bh+='</div>';
+  }
+  document.getElementById('gantt-body').innerHTML=bh;
+}
+
 function renderMiniCal(){
   const months=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
   document.getElementById('cal-title').textContent=`${calYear} ${months[calMonth]}`;
@@ -1693,6 +1825,7 @@ const today=new Date().toISOString().split('T')[0];
   if(el) el.value=today;
 });
 renderMiniCal();
+renderGantt();
 updateDashboard();
 </script>
 </body>
