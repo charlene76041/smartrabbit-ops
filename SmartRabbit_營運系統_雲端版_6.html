@@ -725,31 +725,31 @@ const state = { ig:[], income:[], expenses:[], customers:[], ads:[], bookings:[]
 // ════════════════════════════════════════════════════════════════
 // REALTIME LISTENERS
 // ════════════════════════════════════════════════════════════════
-db.collection('ig').orderBy('createdAt').onSnapshot(snap => {
+db.collection('ig').onSnapshot(snap => {
   state.ig = snap.docs.map(d=>({_id:d.id,...d.data()}));
   if(activePage()==='ig') renderIG();
   updateDashboard();
 });
-db.collection('income').orderBy('date').onSnapshot(snap => {
+db.collection('income').onSnapshot(snap => {
   state.income = snap.docs.map(d=>({_id:d.id,...d.data()}));
   if(activePage()==='revenue') renderIncomeTable();
   updateDashboard();
 });
-db.collection('expenses').orderBy('date').onSnapshot(snap => {
+db.collection('expenses').onSnapshot(snap => {
   state.expenses = snap.docs.map(d=>({_id:d.id,...d.data()}));
   if(activePage()==='revenue') renderExpenseTable();
   updateDashboard();
 });
-db.collection('customers').orderBy('createdAt').onSnapshot(snap => {
+db.collection('customers').onSnapshot(snap => {
   state.customers = snap.docs.map(d=>({_id:d.id,...d.data()}));
   if(activePage()==='crm') renderCRM();
   updateDashboard();
 });
-db.collection('ads').orderBy('createdAt').onSnapshot(snap => {
+db.collection('ads').onSnapshot(snap => {
   state.ads = snap.docs.map(d=>({_id:d.id,...d.data()}));
   if(activePage()==='ads') renderAds();
 });
-db.collection('bookings').orderBy('createdAt').onSnapshot(snap => {
+db.collection('bookings').onSnapshot(snap => {
   state.bookings = snap.docs.map(d=>({_id:d.id,...d.data()}));
   if(activePage()==='booking') renderBookings();
   updateBookingStats();
