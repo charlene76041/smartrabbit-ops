@@ -1730,8 +1730,18 @@ function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderMiniCa
 // ── Google Calendar ────────────────────────────────────────────
 const GCAL_CLIENT_ID='255006868202-t8v8m316ek41ifk6kgno028njuk0in4k.apps.googleusercontent.com';
 const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events';
-let gcalToken=localStorage.getItem('gcal_token')||null;
-if(gcalToken) setTimeout(()=>updateGCalUI(true),500);
+let gcalToken=null;
+(function(){
+  const saved=localStorage.getItem('gcal_token');
+  const expiry=localStorage.getItem('gcal_token_expiry');
+  if(saved&&expiry&&Date.now()<parseInt(expiry)){
+    gcalToken=saved;
+    setTimeout(()=>updateGCalUI(true),500);
+  } else {
+    localStorage.removeItem('gcal_token');
+    localStorage.removeItem('gcal_token_expiry');
+  }
+})();
 
 function handleGCalAuth(){
   if(gcalToken){
@@ -1751,6 +1761,7 @@ function handleGCalAuth(){
     if(token){
       gcalToken=token;
       localStorage.setItem('gcal_token',token);
+      localStorage.setItem('gcal_token_expiry',Date.now()+55*60*1000);
       history.replaceState(null,null,' ');
       updateGCalUI(true);
       toast('✅ Google Calendar 授權成功！');
