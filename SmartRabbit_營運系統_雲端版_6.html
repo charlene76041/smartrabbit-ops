@@ -1731,43 +1731,57 @@ function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderMiniCa
 const GCAL_CLIENT_ID='255006868202-t8v8m316ek41ifk6kgno028njuk0in4k.apps.googleusercontent.com';
 const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events';
 let gcalToken=null;
-(function(){
-  const saved=localStorage.getItem('gcal_token');
-  const expiry=localStorage.getItem('gcal_token_expiry');
-  if(saved&&expiry&&Date.now()<parseInt(expiry)){
-    gcalToken=saved;
-    setTimeout(()=>updateGCalUI(true),500);
-  } else {
-    localStorage.removeItem('gcal_token');
-    localStorage.removeItem('gcal_token_expiry');
-  }
-})();
 
-function handleGCalAuth(){
-  if(gcalToken){
-    toast('📅 已授權，可直接同步');
-    return;
-  }
-  const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${GCAL_CLIENT_ID}&redirect_uri=${encodeURIComponent(location.href)}&response_type=token&scope=${encodeURIComponent(GCAL_SCOPE)}`;
-  window.open(url,'gcal_auth','width=500,height=600');
-}
-
-// Handle OAuth redirect token
+// Handle OAuth redirect token first (priority)
 (function(){
   const hash=location.hash;
   if(hash&&hash.includes('access_token')){
     const params=new URLSearchParams(hash.substring(1));
     const token=params.get('access_token');
+    const expiresIn=params.get('expires_in')||3600;
     if(token){
       gcalToken=token;
-      localStorage.setItem('gcal_token',token);
-      localStorage.setItem('gcal_token_expiry',Date.now()+55*60*1000);
-      history.replaceState(null,null,' ');
-      updateGCalUI(true);
-      toast('✅ Google Calendar 授權成功！');
+      try{
+        localStorage.setItem('gcal_token',token);
+        localStorage.setItem('gcal_token_expiry',String(Date.now()+(parseInt(expiresIn)-60)*1000));
+      }catch(e){}
+      history.replaceState(null,null,location.pathname);
+      setTimeout(()=>{updateGCalUI(true);toast('✅ Google Calendar 授權成功！');},600);
     }
   }
 })();
+
+// Load saved token if not just authorized
+if(!gcalToken){
+  try{
+    const saved=localStorage.getItem('gcal_token');
+    const expiry=localStorage.getItem('gcal_token_expiry');
+    if(saved&&expiry&&Date.now()<parseInt(expiry)){
+      gcalToken=saved;
+      // verify token is still valid
+      fetch('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token='+saved)
+        .then(r=>r.json()).then(info=>{
+          if(info.error){
+            gcalToken=null;
+            localStorage.removeItem('gcal_token');
+            localStorage.removeItem('gcal_token_expiry');
+          } else {
+            setTimeout(()=>updateGCalUI(true),500);
+          }
+        }).catch(()=>{setTimeout(()=>updateGCalUI(true),500);});
+    } else {
+      localStorage.removeItem('gcal_token');
+      localStorage.removeItem('gcal_token_expiry');
+    }
+  }catch(e){}
+}
+
+function handleGCalAuth(){
+  if(gcalToken){toast('📅 已授權，可直接同步');return;}
+  const redirectUri=location.origin+location.pathname;
+  const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${GCAL_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(GCAL_SCOPE)}`;
+  location.href=url;
+}
 
 function updateGCalUI(connected){
   const btn=document.getElementById('gcal-auth-btn');
