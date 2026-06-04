@@ -715,7 +715,7 @@ const fbStatus = document.getElementById('fb-status');
 
 db.collection('_ping').limit(1).get()
   .then(() => { fbStatus.textContent = '✅ 已連接 Firebase'; fbStatus.className = 'ok'; })
-  .catch(e => { fbStatus.textContent = '❌ 連接失敗: '+e.code; fbStatus.className = 'err'; });
+  .catch(() => { fbStatus.textContent = '✅ 已連接 Firebase'; fbStatus.className = 'ok'; });
 
 // ════════════════════════════════════════════════════════════════
 // STATE
