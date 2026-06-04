@@ -591,6 +591,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
             <option value="已確認">已確認</option>
             <option value="已取消">已取消</option>
           </select>
+          <button class="btn btn-ghost" style="font-size:12px;color:#4A9EF5;border-color:#4A9EF5" onclick="batchSyncToGCal()">📅 全部同步至 Google Calendar</button>
           <button class="btn btn-primary" onclick="toggleBKForm()">＋ 新增預約</button>
         </div>
       </div>
@@ -1540,7 +1541,7 @@ function renderBookings(){
       ?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:var(--green);border-color:var(--green)" onclick="updateBookingStatus('${b._id}','已確認')">✓ 確認</button>
          <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="updateBookingStatus('${b._id}','已取消')">✕ 取消</button>`
       :b.status==='已確認'
-      ?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:#4A9EF5;border-color:#4A9EF5" onclick="toast('📅 已同步至 Google Calendar')">📅</button>
+      ?`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;color:#4A9EF5;border-color:#4A9EF5" onclick="syncOneBooking('${b._id}')">📅</button>
          <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="updateBookingStatus('${b._id}','已取消')">✕</button>`
       :`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="del('bookings','${b._id}')">刪除</button>`;
     return `<div class="bk-item">
@@ -1641,7 +1642,27 @@ function updateGCalUI(connected){
   }
 }
 
-function syncToGCal(bk){
+function syncOneBooking(id){
+  const bk=state.bookings.find(b=>b._id===id);
+  if(!bk){toast('找不到預約資料');return;}
+  if(!gcalToken){toast('⚠️ 請先完成 Google Calendar 授權');return;}
+  syncToGCal(bk);
+}
+
+function batchSyncToGCal(){
+  if(!gcalToken){toast('⚠️ 請先完成 Google Calendar 授權');return;}
+  const confirmed=state.bookings.filter(b=>b.status==='已確認');
+  if(!confirmed.length){toast('沒有已確認的預約');return;}
+  let count=0;
+  confirmed.forEach((bk,i)=>{
+    setTimeout(()=>{
+      syncToGCal(bk);
+      count++;
+      if(count===confirmed.length) toast(`✅ 已同步 ${count} 筆預約至 Google Calendar！`);
+    }, i*300);
+  });
+}
+
   if(!gcalToken){return;}
   const startDT=`${bk.date}T${bk.startTime}:00+08:00`;
   const endDT=`${bk.date}T${bk.endTime}:00+08:00`;
