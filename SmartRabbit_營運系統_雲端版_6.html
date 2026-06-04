@@ -773,7 +773,7 @@ db.collection('ads').onSnapshot(snap => {
 });
 db.collection('bookings').onSnapshot(snap => {
   state.bookings = snap.docs.map(d=>({_id:d.id,...d.data()}));
-  if(activePage()==='booking') renderBookings();
+  renderBookings();
   updateBookingStats();
 });
 
@@ -1730,15 +1730,12 @@ function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderMiniCa
 // ── Google Calendar ────────────────────────────────────────────
 const GCAL_CLIENT_ID='255006868202-t8v8m316ek41ifk6kgno028njuk0in4k.apps.googleusercontent.com';
 const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.events';
-let gcalToken=null;
+let gcalToken=localStorage.getItem('gcal_token')||null;
+if(gcalToken) setTimeout(()=>updateGCalUI(true),500);
 
 function handleGCalAuth(){
   if(gcalToken){
     toast('📅 已授權，可直接同步');
-    return;
-  }
-  if(GCAL_CLIENT_ID==='YOUR_GOOGLE_CLIENT_ID'){
-    alert('⚠️ 尚未設定 Google Client ID\n\n請先完成 Google Cloud Console 設定，\n將 Client ID 填入程式碼中的 GCAL_CLIENT_ID 變數。');
     return;
   }
   const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${GCAL_CLIENT_ID}&redirect_uri=${encodeURIComponent(location.href)}&response_type=token&scope=${encodeURIComponent(GCAL_SCOPE)}`;
@@ -1750,8 +1747,10 @@ function handleGCalAuth(){
   const hash=location.hash;
   if(hash&&hash.includes('access_token')){
     const params=new URLSearchParams(hash.substring(1));
-    gcalToken=params.get('access_token');
-    if(gcalToken){
+    const token=params.get('access_token');
+    if(token){
+      gcalToken=token;
+      localStorage.setItem('gcal_token',token);
       history.replaceState(null,null,' ');
       updateGCalUI(true);
       toast('✅ Google Calendar 授權成功！');
