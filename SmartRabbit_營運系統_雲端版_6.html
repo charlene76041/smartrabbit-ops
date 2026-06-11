@@ -319,7 +319,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
     <div class="card"><div class="card-label">累計新增追蹤</div><div class="card-val" id="ig-stat-followers">—</div></div>
   </div>
 
-  <div class="section-title">貼文紀錄</div>
+  <div class="section-title" style="cursor:default">貼文紀錄 <button class="btn btn-ghost" style="font-size:11px;padding:4px 12px;margin-left:8px" onclick="exportExcel('ig')">📥 匯出 Excel</button></div>
   <div class="table-wrap">
     <table>
       <thead><tr>
@@ -337,10 +337,16 @@ tr:hover td{background:var(--bg3);color:var(--text)}
   <div class="page-title">營收管理</div>
   <div class="page-sub">收入 · 支出 · 區間匯總</div>
 
-  <div class="rev-tabs">
-    <div class="rev-tab active" id="tab-income" onclick="switchRevTab('income')">💰 新增收入</div>
-    <div class="rev-tab" id="tab-expense" onclick="switchRevTab('expense')">🧾 新增支出</div>
-    <div class="rev-tab" id="tab-summary" onclick="switchRevTab('summary')">📊 區間匯總</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+    <div class="rev-tabs" style="margin-bottom:0">
+      <div class="rev-tab active" id="tab-income" onclick="switchRevTab('income')">💰 新增收入</div>
+      <div class="rev-tab" id="tab-expense" onclick="switchRevTab('expense')">🧾 新增支出</div>
+      <div class="rev-tab" id="tab-summary" onclick="switchRevTab('summary')">📊 區間匯總</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" style="font-size:12px" onclick="exportExcel('income')">📥 匯出收入 Excel</button>
+      <button class="btn btn-ghost" style="font-size:12px" onclick="exportExcel('expense')">📥 匯出支出 Excel</button>
+    </div>
   </div>
 
   <!-- 收入 -->
@@ -351,6 +357,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
         <div class="form-group"><label>客人姓名</label><input id="inc-name" placeholder="王小明"></div>
         <div class="form-group"><label>收入類型</label>
           <select id="inc-type">
+            <option>新手體驗</option>
             <option>單次體驗</option>
             <option>暢滑方案</option>
             <option>包場</option>
@@ -359,8 +366,8 @@ tr:hover td{background:var(--bg3);color:var(--text)}
             <option>其他</option>
           </select>
         </div>
-        <div class="form-group"><label>組數</label><input id="inc-qty" type="number" placeholder="1" min="1" oninput="calcSubtotal()"></div>
-        <div class="form-group"><label>單組金額 (NT$)</label><input id="inc-unit" type="number" placeholder="1200" oninput="calcSubtotal()"></div>
+        <div class="form-group"><label>組數</label><input id="inc-qty" type="number" placeholder="1" min="0" step="0.5" oninput="calcSubtotal()"></div>
+        <div class="form-group"><label>單組金額 (NT$)</label><input id="inc-unit" type="number" placeholder="0" min="0" oninput="calcSubtotal()"></div>
         <div class="form-group"><label>收費方式</label>
           <select id="inc-pay">
             <option>現金</option>
@@ -420,6 +427,12 @@ tr:hover td{background:var(--bg3);color:var(--text)}
             <option>其他</option>
           </select>
         </div>
+        <div class="form-group"><label>性質</label>
+          <select id="exp-nature">
+            <option>費用</option>
+            <option>資產</option>
+          </select>
+        </div>
         <div class="form-group"><label>說明</label><input id="exp-desc" placeholder="選填說明"></div>
       </div>
       <!-- Receipt upload -->
@@ -437,8 +450,14 @@ tr:hover td{background:var(--bg3);color:var(--text)}
 
     <div class="section-title">支出紀錄</div>
     <div class="table-wrap">
-      <table><thead><tr><th>日期</th><th>購買人</th><th>地點</th><th>金額</th><th>支付方式</th><th>類別</th><th>說明</th><th>收據</th><th></th></tr></thead>
-      <tbody id="expense-tbody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr></tbody></table>
+      <table><thead><tr><th>日期</th><th>購買人</th><th>地點</th><th>金額</th><th>支付方式</th><th>類別</th><th>性質</th><th>說明</th><th>收據</th><th></th></tr></thead>
+      <tbody id="expense-tbody"><tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr></tbody>
+      <tfoot><tr>
+        <td colspan="3" style="padding:11px 14px;font-size:11px;color:var(--muted);letter-spacing:1px">合計</td>
+        <td id="expense-total" style="padding:11px 14px;font-weight:700;color:var(--coral)">NT$0</td>
+        <td colspan="6"></td>
+      </tr></tfoot>
+      </table>
     </div>
   </div>
 
@@ -487,7 +506,10 @@ tr:hover td{background:var(--bg3);color:var(--text)}
   <div class="page-sub">客戶資料管理</div>
   <div class="top-bar">
     <input id="crm-search" placeholder="🔍 搜尋姓名 / 電話" style="width:240px" oninput="renderCRM()">
-    <button class="btn btn-primary" onclick="showCRMForm()">＋ 新增客人</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" style="font-size:12px" onclick="exportExcel('crm')">📥 匯出 Excel</button>
+      <button class="btn btn-primary" onclick="showCRMForm()">＋ 新增客人</button>
+    </div>
   </div>
   <div class="card" id="crm-form" style="display:none;margin-bottom:20px">
     <div class="form-grid">
@@ -567,7 +589,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
     <div class="card"><div class="card-label" style="margin-bottom:14px">花費 vs 成交金額</div><div class="chart-wrap"><canvas id="chart-ads-bar"></canvas></div></div>
     <div class="card"><div class="card-label" style="margin-bottom:14px">廣告類型佔比</div><div class="chart-wrap"><canvas id="chart-ads-pie"></canvas></div></div>
   </div>
-  <div class="section-title">投放紀錄</div>
+  <div class="section-title" style="cursor:default">投放紀錄 <button class="btn btn-ghost" style="font-size:11px;padding:4px 12px;margin-left:8px" onclick="exportExcel('ads')">📥 匯出 Excel</button></div>
   <div class="table-wrap" style="margin-bottom:20px">
     <table><thead><tr><th>廣告標題</th><th>投放區間</th><th>天數</th><th>類型</th><th>目標</th><th>花費</th><th>觸及</th><th>點擊</th><th>私訊</th><th>成交</th><th>成交金額</th><th>ROAS</th><th>CPC</th><th></th></tr></thead>
     <tbody id="ads-tbody"><tr><td colspan="14" style="text-align:center;color:var(--muted);padding:20px">尚無投放紀錄</td></tr></tbody></table>
@@ -886,15 +908,17 @@ function switchRevTab(tab){
 // INCOME
 // ════════════════════════════════════════════════════════════════
 function calcSubtotal(){
-  const qty=parseInt(document.getElementById('inc-qty').value)||0;
-  const unit=parseInt(document.getElementById('inc-unit').value)||0;
-  const sub=qty*unit;
-  document.getElementById('inc-subtotal').textContent=sub?`NT$ ${sub.toLocaleString()}`:'NT$ —';
-  document.getElementById('inc-formula').textContent=qty&&unit?`${qty} 組 × NT$${unit.toLocaleString()} = NT$${sub.toLocaleString()}`:'組數 × 單組金額';
+  const qty=parseFloat(document.getElementById('inc-qty').value);
+  const unit=parseFloat(document.getElementById('inc-unit').value);
+  const qtyOk=!isNaN(qty)&&qty>0;
+  const unitOk=!isNaN(unit)&&unit>=0;
+  const sub=qtyOk&&unitOk?qty*unit:null;
+  document.getElementById('inc-subtotal').textContent=sub!==null?`NT$ ${sub.toLocaleString()}`:'NT$ —';
+  document.getElementById('inc-formula').textContent=qtyOk&&unitOk?`${qty} 組 × NT$${unit.toLocaleString()} = NT$${sub.toLocaleString()}`:'組數 × 單組金額';
 }
 function saveIncome(){
-  const qty=parseInt(document.getElementById('inc-qty').value)||0;
-  const unit=parseInt(document.getElementById('inc-unit').value)||0;
+  const qty=parseFloat(document.getElementById('inc-qty').value);
+  const unit=parseFloat(document.getElementById('inc-unit').value);
   const data={
     date:document.getElementById('inc-date').value,
     name:document.getElementById('inc-name').value,
@@ -906,7 +930,8 @@ function saveIncome(){
     createdAt:Date.now()
   };
   if(!data.date||!data.name){toast('請填入日期和客人姓名');return;}
-  if(!qty||!unit){toast('請填入組數和單組金額');return;}
+  if(isNaN(qty)||qty<=0){toast('請填入組數（需大於 0）');return;}
+  if(isNaN(unit)||unit<0){toast('請填入單組金額（可為 0）');return;}
   db.collection('income').add(data).then(()=>{
     toast('✅ 收入已儲存！');
     ['inc-date','inc-name','inc-qty','inc-unit','inc-note'].forEach(id=>document.getElementById(id).value='');
@@ -921,7 +946,7 @@ function renderIncomeTable(){
   tbody.innerHTML=state.income.slice().reverse().map(r=>`<tr>
     <td>${r.date||'—'}</td><td>${r.name||'—'}</td>
     <td><span class="tag tag-teal">${r.type||'—'}</span></td>
-    <td>${r.qty||0} 組</td>
+    <td>${r.qty!=null?r.qty:0} 組</td>
     <td>NT$${(r.unit||0).toLocaleString()}</td>
     <td style="color:var(--green);font-weight:700">NT$${(r.subtotal||0).toLocaleString()}</td>
     <td><span class="tag ${payColor[r.pay]||'tag-teal'}">${r.pay||'—'}</span></td>
@@ -945,22 +970,22 @@ function previewReceipt(input){
   reader.readAsDataURL(receiptFile);
 }
 async function saveExpense(){
-  const amount=parseInt(document.getElementById('exp-amount').value)||0;
+  const amount=parseFloat(document.getElementById('exp-amount').value);
   const data={
     date:document.getElementById('exp-date').value,
     buyer:document.getElementById('exp-buyer').value,
     place:document.getElementById('exp-place').value,
-    amount,
+    amount:isNaN(amount)?0:amount,
     pay:document.getElementById('exp-pay').value,
     cat:document.getElementById('exp-cat').value,
+    nature:document.getElementById('exp-nature').value,
     desc:document.getElementById('exp-desc').value,
     receiptUrl:'',
     createdAt:Date.now()
   };
   if(!data.date||!data.buyer){toast('請填入日期和購買人');return;}
-  if(!amount){toast('請填入金額');return;}
+  if(isNaN(amount)||amount<0){toast('請填入金額（可為 0）');return;}
 
-  // Upload receipt if exists
   if(receiptFile){
     try{
       const ref=storage.ref(`receipts/${Date.now()}_${receiptFile.name}`);
@@ -978,17 +1003,25 @@ async function saveExpense(){
 }
 function renderExpenseTable(){
   const tbody=document.getElementById('expense-tbody');
-  if(!state.expenses.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr>';return;}
+  if(!state.expenses.length){
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px">尚無資料</td></tr>';
+    document.getElementById('expense-total').textContent='NT$0';
+    return;
+  }
   const catColor={'日用品':'tag-teal','設備維修':'tag-coral','油料':'tag-amber','行銷費用':'tag-purple','食材飲料':'tag-green','安全裝備':'tag-teal','場地費用':'tag-amber','人事費用':'tag-purple','其他':'tag-coral'};
   tbody.innerHTML=state.expenses.slice().reverse().map(r=>`<tr>
     <td>${r.date||'—'}</td><td>${r.buyer||'—'}</td><td>${r.place||'—'}</td>
     <td style="color:var(--coral);font-weight:700">NT$${(r.amount||0).toLocaleString()}</td>
     <td>${r.pay||'—'}</td>
     <td><span class="tag ${catColor[r.cat]||'tag-teal'}">${r.cat||'—'}</span></td>
+    <td><span class="tag ${r.nature==='資產'?'tag-purple':'tag-amber'}">${r.nature||'費用'}</span></td>
     <td>${r.desc||'—'}</td>
     <td>${r.receiptUrl?`<img src="${r.receiptUrl}" class="receipt-thumb" onclick="window.open('${r.receiptUrl}')">`:'-'}</td>
     <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('expenses','${r._id}')">刪除</button></td>
   </tr>`).join('');
+  // Total
+  const total=state.expenses.reduce((s,r)=>s+(r.amount||0),0);
+  document.getElementById('expense-total').textContent=`NT$${total.toLocaleString()}`;
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1838,9 +1871,75 @@ function syncToGCal(bk){
   }).catch(()=>toast('⚠️ 網路錯誤，無法同步 Google Calendar'));
 }
 
+
 // ════════════════════════════════════════════════════════════════
-// INIT
+// EXCEL 匯出
 // ════════════════════════════════════════════════════════════════
+function exportExcel(type){
+  let rows=[];
+  let filename='';
+
+  if(type==='income'){
+    filename=`Smart_Rabbit_收入紀錄_${new Date().toISOString().slice(0,10)}.csv`;
+    rows.push(['日期','客人姓名','收入類型','組數','單組金額','小計','收費方式','備註']);
+    state.income.slice().sort((a,b)=>a.date>b.date?1:-1).forEach(r=>{
+      rows.push([r.date,r.name,r.type,r.qty,r.unit,r.subtotal,r.pay,r.note||'']);
+    });
+    // Total row
+    const total=state.income.reduce((s,r)=>s+(r.subtotal||0),0);
+    rows.push(['','','','','','合計 NT$'+total,'','']);
+  }
+
+  if(type==='expense'){
+    filename=`Smart_Rabbit_支出紀錄_${new Date().toISOString().slice(0,10)}.csv`;
+    rows.push(['日期','購買人','地點/商家','金額','支付方式','類別','性質','說明']);
+    state.expenses.slice().sort((a,b)=>a.date>b.date?1:-1).forEach(r=>{
+      rows.push([r.date,r.buyer,r.place,r.amount,r.pay,r.cat,r.nature||'費用',r.desc||'']);
+    });
+    const total=state.expenses.reduce((s,r)=>s+(r.amount||0),0);
+    rows.push(['','','','合計 NT$'+total,'','','','']);
+  }
+
+  if(type==='ig'){
+    filename=`Smart_Rabbit_IG紀錄_${new Date().toISOString().slice(0,10)}.csv`;
+    rows.push(['發布日期','類型','標題','觸及','曝光','按讚','留言','分享','儲存','新追蹤','完播率%','女性%','男性%','年齡層1','佔比1%','年齡層2','佔比2%']);
+    state.ig.slice().sort((a,b)=>a.date>b.date?1:-1).forEach(r=>{
+      rows.push([r.date,r.type,r.title||'',r.reach,r.impressions||0,r.likes,r.comments,r.shares,r.saves,r.newFollowers,r.completion||'',r.female||'',r.male||'',r.age1||'',r.age1Pct||'',r.age2||'',r.age2Pct||'']);
+    });
+  }
+
+  if(type==='crm'){
+    filename=`Smart_Rabbit_客人CRM_${new Date().toISOString().slice(0,10)}.csv`;
+    rows.push(['姓名','電話','IG帳號','Line ID','來源','等級','首次體驗','體驗次數','備註']);
+    state.customers.forEach(c=>{
+      rows.push([c.name,c.phone||'',c.ig||'',c.line||'',c.source,c.level,c.firstDate||'',c.visits||0,c.note||'']);
+    });
+  }
+
+  if(type==='ads'){
+    filename=`Smart_Rabbit_廣告投放_${new Date().toISOString().slice(0,10)}.csv`;
+    rows.push(['廣告標題','開始日期','結束日期','天數','類型','目標','花費','觸及','點擊','私訊','成交人數','成交金額','ROAS','CPC','備註']);
+    state.ads.slice().sort((a,b)=>(a.dateStart||a.date)>(b.dateStart||b.date)?1:-1).forEach(r=>{
+      rows.push([r.title||'',r.dateStart||r.date||'',r.dateEnd||'',r.days||'',r.type,r.goal,r.spend,r.reach,r.clicks,r.dm,r.convert,r.revenue,r.roas,r.cpc||'',r.desc||'']);
+    });
+  }
+
+  // Convert to CSV with BOM for Excel UTF-8
+  const bom='\uFEFF';
+  const csv=bom+rows.map(row=>row.map(cell=>{
+    const s=String(cell==null?'':cell);
+    return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`:s;
+  }).join(',')).join('\n');
+
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+  toast(`📥 ${filename} 已下載！`);
+}
+
+
 // Set today as default date for income/expense forms
 const today=new Date().toISOString().split('T')[0];
 ['inc-date','exp-date','ad-date-start','ad-date-end','bk-date'].forEach(id=>{
