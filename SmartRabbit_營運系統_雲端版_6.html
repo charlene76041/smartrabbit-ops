@@ -182,6 +182,20 @@ tr:hover td{background:var(--bg3);color:var(--text)}
 .cal-day.today{background:var(--teal2);color:var(--teal);font-weight:700}
 .cal-day.has-bk::after{content:'';display:block;width:5px;height:5px;border-radius:50%;background:var(--amber);margin:1px auto 0}
 .cal-day.empty{cursor:default;pointer-events:none}
+
+/* ── Custom select with add option ── */
+.custom-select-wrap{position:relative;display:flex;gap:6px;align-items:center}
+.custom-select-wrap select{flex:1}
+.add-opt-btn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--teal);cursor:pointer;font-size:14px;padding:0 8px;height:36px;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.add-opt-btn:hover{background:var(--teal);color:var(--bg)}
+
+/* ── Edit modal ── */
+.modal-overlay{position:fixed;inset:0;background:#00000099;z-index:500;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px 32px;min-width:480px;max-width:720px;width:90vw;max-height:85vh;overflow-y:auto;position:relative}
+.modal-title{font-family:var(--font-head);font-size:22px;letter-spacing:2px;color:var(--teal);margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.btn-save{background:var(--green);color:var(--bg);padding:9px 20px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:700}
+.btn-save:hover{opacity:.85}
 </style>
 </head>
 <body>
@@ -356,7 +370,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
         <div class="form-group"><label>日期</label><input id="inc-date" type="date"></div>
         <div class="form-group"><label>客人姓名</label><input id="inc-name" placeholder="王小明"></div>
         <div class="form-group"><label>收入類型</label>
-          <select id="inc-type">
+          <div class="custom-select-wrap"><select id="inc-type">
             <option>新手體驗</option>
             <option>單次體驗</option>
             <option>暢滑方案</option>
@@ -364,18 +378,18 @@ tr:hover td{background:var(--bg3);color:var(--text)}
             <option>教練課</option>
             <option>裝備租借</option>
             <option>其他</option>
-          </select>
+          </select><button class="add-opt-btn" onclick="addOption('inc-type')" title="新增選項">＋</button></div>
         </div>
         <div class="form-group"><label>組數</label><input id="inc-qty" type="number" placeholder="1" min="0" step="0.5" oninput="calcSubtotal()"></div>
         <div class="form-group"><label>單組金額 (NT$)</label><input id="inc-unit" type="number" placeholder="0" min="0" oninput="calcSubtotal()"></div>
         <div class="form-group"><label>收費方式</label>
-          <select id="inc-pay">
+          <div class="custom-select-wrap"><select id="inc-pay">
             <option>現金</option>
             <option>轉帳</option>
             <option>Line Pay</option>
             <option>信用卡</option>
             <option>其他</option>
-          </select>
+          </select><button class="add-opt-btn" onclick="addOption('inc-pay')" title="新增選項">＋</button></div>
         </div>
         <div class="form-group"><label>備註</label><input id="inc-note" placeholder="選填"></div>
       </div>
@@ -405,17 +419,17 @@ tr:hover td{background:var(--bg3);color:var(--text)}
         <div class="form-group"><label>地點 / 商家</label><input id="exp-place" placeholder="家樂福"></div>
         <div class="form-group"><label>金額 (NT$)</label><input id="exp-amount" type="number" placeholder="0"></div>
         <div class="form-group"><label>支付方式</label>
-          <select id="exp-pay">
+          <div class="custom-select-wrap"><select id="exp-pay">
             <option>現金</option>
             <option>Simon代墊</option>
             <option>轉帳</option>
             <option>公司帳戶</option>
             <option>信用卡</option>
             <option>其他</option>
-          </select>
+          </select><button class="add-opt-btn" onclick="addOption('exp-pay')" title="新增選項">＋</button></div>
         </div>
         <div class="form-group"><label>類別</label>
-          <select id="exp-cat">
+          <div class="custom-select-wrap"><select id="exp-cat">
             <option>日用品</option>
             <option>設備維修</option>
             <option>油料</option>
@@ -425,7 +439,7 @@ tr:hover td{background:var(--bg3);color:var(--text)}
             <option>場地費用</option>
             <option>人事費用</option>
             <option>其他</option>
-          </select>
+          </select><button class="add-opt-btn" onclick="addOption('exp-cat')" title="新增選項">＋</button></div>
         </div>
         <div class="form-group"><label>性質</label>
           <select id="exp-nature">
@@ -951,7 +965,7 @@ function renderIncomeTable(){
     <td style="color:var(--green);font-weight:700">NT$${(r.subtotal||0).toLocaleString()}</td>
     <td><span class="tag ${payColor[r.pay]||'tag-teal'}">${r.pay||'—'}</span></td>
     <td>${r.note||'—'}</td>
-    <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('income','${r._id}')">刪除</button></td>
+    <td style="white-space:nowrap"><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="editRecord('income','${r._id}')">編輯</button><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('income','${r._id}')">刪除</button></td>
   </tr>`).join('');
 }
 
@@ -1017,7 +1031,7 @@ function renderExpenseTable(){
     <td><span class="tag ${r.nature==='資產'?'tag-purple':'tag-amber'}">${r.nature||'費用'}</span></td>
     <td>${r.desc||'—'}</td>
     <td>${r.receiptUrl?`<img src="${r.receiptUrl}" class="receipt-thumb" onclick="window.open('${r.receiptUrl}')">`:'-'}</td>
-    <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('expenses','${r._id}')">刪除</button></td>
+    <td style="white-space:nowrap"><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="editRecord('expenses','${r._id}')">編輯</button><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('expenses','${r._id}')">刪除</button></td>
   </tr>`).join('');
   // Total
   const total=state.expenses.reduce((s,r)=>s+(r.amount||0),0);
@@ -1164,7 +1178,7 @@ function renderIG(){
       <td>${r.completion!=null?r.completion+'%':'—'}</td>
       <td style="white-space:nowrap">${genderStr}</td>
       <td style="white-space:nowrap;font-size:11px">${ageStr}</td>
-      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('ig','${r._id}')">刪除</button></td>
+      <td style="white-space:nowrap"><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="editRecord('ig','${r._id}')">編輯</button><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('ig','${r._id}')">刪除</button></td>
     </tr>`;
   }).join('');
 }
@@ -1214,7 +1228,7 @@ function renderCRM(){
       <td>${c.firstDate||'—'}</td><td>${c.visits||0}</td>
       <td>${lessonBadge}</td>
       <td>${c.note||'—'}</td>
-      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('customers','${c._id}')">刪除</button></td>
+      <td style="white-space:nowrap"><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="editRecord('customers','${c._id}')">編輯</button><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('customers','${c._id}')">刪除</button></td>
     </tr>
     <tr id="lesson-panel-${c._id}" style="display:none">
       <td colspan="12" style="padding:0">
@@ -1450,7 +1464,7 @@ function renderAds(){
       <td>NT$${(r.revenue||0).toLocaleString()}</td>
       <td style="color:${rc};font-weight:700">${r.roas||0}x</td>
       <td>${r.cpc?'NT$'+r.cpc:'—'}</td>
-      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('ads','${r._id}')">刪除</button></td>
+      <td style="white-space:nowrap"><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="editRecord('ads','${r._id}')">編輯</button><button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="del('ads','${r._id}')">刪除</button></td>
     </tr>`;
   }).join('');
 
@@ -1940,15 +1954,286 @@ function exportExcel(type){
 }
 
 
+
+// ════════════════════════════════════════════════════════════════
+// CUSTOM OPTIONS (永久保存到 Firebase)
+// ════════════════════════════════════════════════════════════════
+const customOptions = {};
+const selectDefaults = {
+  'inc-type':  ['新手體驗','單次體驗','暢滑方案','包場','教練課','裝備租借','其他'],
+  'inc-pay':   ['現金','轉帳','Line Pay','信用卡','其他'],
+  'exp-pay':   ['現金','Simon代墊','轉帳','公司帳戶','信用卡','其他'],
+  'exp-cat':   ['日用品','設備維修','油料','行銷費用','食材飲料','安全裝備','場地費用','人事費用','其他'],
+  'crm-source':['問卷','IG 私訊','朋友介紹','現場來訪','廣告','其他'],
+  'crm-level': ['潛在','體驗過','暢滑訂閱','VIP'],
+  'ad-type':   ['Reels 廣告','貼文廣告','限動廣告'],
+  'ad-goal':   ['品牌曝光','暢滑方案','單次體驗','活動推廣'],
+};
+
+// Load custom options from Firebase on startup
+function loadCustomOptions(){
+  db.collection('_settings').doc('customOptions').get().then(doc=>{
+    if(doc.exists){
+      const data=doc.data();
+      Object.assign(customOptions, data);
+    }
+    Object.keys(selectDefaults).forEach(sid=>rebuildSelect(sid));
+  }).catch(()=>{
+    Object.keys(selectDefaults).forEach(sid=>rebuildSelect(sid));
+  });
+}
+
+function rebuildSelect(sid){
+  const el=document.getElementById(sid);
+  if(!el) return;
+  const current=el.value;
+  const defaults=selectDefaults[sid]||[];
+  const extras=customOptions[sid]||[];
+  const all=[...defaults,...extras.filter(o=>!defaults.includes(o))];
+  el.innerHTML=all.map(o=>`<option${o===current?' selected':''}>${o}</option>`).join('');
+}
+
+let addOptTarget=null;
+function addOption(sid){
+  addOptTarget=sid;
+  const label={'inc-type':'收入類型','inc-pay':'收費方式','exp-pay':'支出支付方式','exp-cat':'支出類別','crm-source':'客人來源','crm-level':'客人等級','ad-type':'廣告類型','ad-goal':'投放目標'}[sid]||sid;
+  document.getElementById('addopt-label').textContent='為「'+label+'」新增自訂選項';
+  document.getElementById('addopt-input').value='';
+  // Show existing custom options
+  const extras=customOptions[sid]||[];
+  document.getElementById('addopt-existing').innerHTML=extras.length
+    ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">已新增的自訂選項：</div>'+
+      extras.map(o=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:12px;color:var(--text2)">${o}</span><button onclick="deleteCustomOpt('${sid}','${o}')" style="background:none;border:none;color:var(--coral);cursor:pointer;font-size:12px">✕</button></div>`).join('')
+    : '';
+  document.getElementById('addopt-modal').style.display='flex';
+  setTimeout(()=>document.getElementById('addopt-input').focus(),100);
+}
+
+function confirmAddOpt(){
+  const val=document.getElementById('addopt-input').value.trim();
+  if(!val){toast('請輸入選項名稱');return;}
+  const sid=addOptTarget;
+  if(!customOptions[sid]) customOptions[sid]=[];
+  if(customOptions[sid].includes(val)||selectDefaults[sid].includes(val)){toast('此選項已存在');return;}
+  customOptions[sid].push(val);
+  saveCustomOptions();
+  rebuildSelect(sid);
+  // Select new option
+  const el=document.getElementById(sid);
+  if(el) el.value=val;
+  closeAddOpt();
+  toast('✅ 已新增選項「'+val+'」');
+}
+
+function deleteCustomOpt(sid, val){
+  if(!customOptions[sid]) return;
+  customOptions[sid]=customOptions[sid].filter(o=>o!==val);
+  saveCustomOptions();
+  rebuildSelect(sid);
+  addOption(sid); // refresh modal
+  toast('已刪除選項「'+val+'」');
+}
+
+function saveCustomOptions(){
+  db.collection('_settings').doc('customOptions').set(customOptions).catch(e=>console.warn('Save options failed',e));
+}
+
+function closeAddOpt(){
+  document.getElementById('addopt-modal').style.display='none';
+  addOptTarget=null;
+}
+
+// ════════════════════════════════════════════════════════════════
+// EDIT RECORDS
+// ════════════════════════════════════════════════════════════════
+let editState={col:null, id:null};
+
+function editRecord(col, id){
+  const record = (
+    col==='income'    ? state.income :
+    col==='expenses'  ? state.expenses :
+    col==='ig'        ? state.ig :
+    col==='customers' ? state.customers :
+    col==='ads'       ? state.ads : []
+  ).find(r=>r._id===id);
+  if(!record){toast('找不到資料');return;}
+  editState={col,id};
+
+  const titles={income:'編輯收入紀錄',expenses:'編輯支出紀錄',ig:'編輯 IG 貼文',customers:'編輯客人資料',ads:'編輯廣告投放'};
+  document.getElementById('modal-title').textContent=titles[col]||'編輯紀錄';
+  document.getElementById('modal-body').innerHTML=buildEditForm(col,record);
+  document.getElementById('edit-modal').style.display='flex';
+}
+
+function buildEditForm(col, r){
+  const fi=(id,label,val,type='text',extra='')=>
+    `<div class="form-group" style="margin-bottom:12px"><label style="font-size:11px;color:var(--muted)">${label}</label><input id="ef-${id}" type="${type}" value="${val??''}" ${extra} style="width:100%"></div>`;
+  const fs=(id,label,opts,val)=>
+    `<div class="form-group" style="margin-bottom:12px"><label style="font-size:11px;color:var(--muted)">${label}</label><select id="ef-${id}" style="width:100%">${opts.map(o=>`<option${o===val?' selected':''}>${o}</option>`).join('')}</select></div>`;
+  const ft=(id,label,val)=>
+    `<div class="form-group" style="margin-bottom:12px"><label style="font-size:11px;color:var(--muted)">${label}</label><textarea id="ef-${id}" rows="3" style="width:100%">${val??''}</textarea></div>`;
+
+  const incTypes=[...selectDefaults['inc-type'],  ...(customOptions['inc-type']||[])];
+  const incPays= [...selectDefaults['inc-pay'],   ...(customOptions['inc-pay']||[])];
+  const expPays= [...selectDefaults['exp-pay'],   ...(customOptions['exp-pay']||[])];
+  const expCats= [...selectDefaults['exp-cat'],   ...(customOptions['exp-cat']||[])];
+  const crmSrcs= [...selectDefaults['crm-source'],...(customOptions['crm-source']||[])];
+  const crmLvls= [...selectDefaults['crm-level'], ...(customOptions['crm-level']||[])];
+  const adTypes= [...selectDefaults['ad-type'],   ...(customOptions['ad-type']||[])];
+  const adGoals= [...selectDefaults['ad-goal'],   ...(customOptions['ad-goal']||[])];
+
+  if(col==='income') return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+    ${fi('date','日期',r.date,'date')}
+    ${fi('name','客人姓名',r.name)}
+    ${fs('type','收入類型',incTypes,r.type)}
+    ${fi('qty','組數',r.qty,'number','step="0.5" min="0"')}
+    ${fi('unit','單組金額',r.unit,'number','min="0"')}
+    ${fs('pay','收費方式',incPays,r.pay)}
+    </div>${fi('note','備註',r.note)}`;
+
+  if(col==='expenses') return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+    ${fi('date','日期',r.date,'date')}
+    ${fi('buyer','購買人',r.buyer)}
+    ${fi('place','地點/商家',r.place)}
+    ${fi('amount','金額',r.amount,'number','min="0"')}
+    ${fs('pay','支付方式',expPays,r.pay)}
+    ${fs('cat','類別',expCats,r.cat)}
+    ${fs('nature','性質',['費用','資產'],r.nature||'費用')}
+    </div>${fi('desc','說明',r.desc)}`;
+
+  if(col==='ig') return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+    ${fi('date','發布日期',r.date,'date')}
+    ${fs('type','貼文類型',['Reels','靜態貼文','輪播貼文','限動'],r.type)}
+    </div>
+    ${fi('title','標題',r.title)}
+    ${fi('url','連結',r.url)}
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 16px">
+    ${fi('reach','觸及',r.reach,'number')}
+    ${fi('impressions','曝光',r.impressions,'number')}
+    ${fi('likes','按讚',r.likes,'number')}
+    ${fi('comments','留言',r.comments,'number')}
+    ${fi('shares','分享',r.shares,'number')}
+    ${fi('saves','儲存',r.saves,'number')}
+    ${fi('newFollowers','新追蹤',r.newFollowers,'number')}
+    ${fi('completion','完播率%',r.completion,'number')}
+    ${fi('female','女性%',r.female,'number')}
+    </div>`;
+
+  if(col==='customers') return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+    ${fi('name','姓名',r.name)}
+    ${fi('phone','電話',r.phone)}
+    ${fi('ig','IG帳號',r.ig)}
+    ${fi('line','Line ID',r.line)}
+    ${fs('source','來源',crmSrcs,r.source)}
+    ${fs('level','等級',crmLvls,r.level)}
+    ${fi('firstDate','首次體驗日',r.firstDate,'date')}
+    ${fi('visits','體驗次數',r.visits,'number')}
+    </div>${fi('note','備註',r.note)}`;
+
+  if(col==='ads') return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+    ${fi('dateStart','開始日期',r.dateStart,'date')}
+    ${fi('dateEnd','結束日期',r.dateEnd,'date')}
+    ${fi('title','廣告標題',r.title)}
+    ${fi('url','廣告連結',r.url)}
+    ${fs('type','廣告類型',adTypes,r.type)}
+    ${fs('goal','投放目標',adGoals,r.goal)}
+    ${fi('spend','花費',r.spend,'number')}
+    ${fi('reach','觸及',r.reach,'number')}
+    ${fi('impressions','曝光',r.impressions,'number')}
+    ${fi('clicks','點擊',r.clicks,'number')}
+    ${fi('dm','私訊',r.dm,'number')}
+    ${fi('convert','成交人數',r.convert,'number')}
+    ${fi('revenue','成交金額',r.revenue,'number')}
+    </div>${fi('desc','備註',r.desc)}`;
+
+  return '<p style="color:var(--muted)">不支援此類型的編輯</p>';
+}
+
+function saveEdit(){
+  const {col,id}=editState;
+  const g=(k)=>{const el=document.getElementById('ef-'+k);return el?el.value:undefined;};
+  let data={};
+
+  if(col==='income'){
+    const qty=parseFloat(g('qty')); const unit=parseFloat(g('unit'));
+    data={date:g('date'),name:g('name'),type:g('type'),qty,unit,subtotal:qty*unit,pay:g('pay'),note:g('note')};
+  }
+  if(col==='expenses'){
+    data={date:g('date'),buyer:g('buyer'),place:g('place'),amount:parseFloat(g('amount'))||0,pay:g('pay'),cat:g('cat'),nature:g('nature'),desc:g('desc')};
+  }
+  if(col==='ig'){
+    const female=parseFloat(g('female'));
+    data={date:g('date'),type:g('type'),title:g('title'),url:g('url'),
+      reach:+g('reach')||0,impressions:+g('impressions')||0,likes:+g('likes')||0,
+      comments:+g('comments')||0,shares:+g('shares')||0,saves:+g('saves')||0,
+      newFollowers:+g('newFollowers')||0,completion:g('completion')!==''?+g('completion'):null,
+      female:isNaN(female)?null:female,male:isNaN(female)?null:Math.max(0,100-female)};
+  }
+  if(col==='customers'){
+    data={name:g('name'),phone:g('phone'),ig:g('ig'),line:g('line'),source:g('source'),
+      level:g('level'),firstDate:g('firstDate'),visits:+g('visits')||0,note:g('note')};
+  }
+  if(col==='ads'){
+    const spend=+g('spend')||0; const revenue=+g('revenue')||0; const clicks=+g('clicks')||0;
+    const dateStart=g('dateStart'); const dateEnd=g('dateEnd');
+    const days=dateStart&&dateEnd?Math.round((new Date(dateEnd)-new Date(dateStart))/(86400000))+1:0;
+    data={dateStart,dateEnd,days,title:g('title'),url:g('url'),type:g('type'),goal:g('goal'),
+      spend,reach:+g('reach')||0,impressions:+g('impressions')||0,clicks,
+      dm:+g('dm')||0,convert:+g('convert')||0,revenue,
+      roas:spend>0?+(revenue/spend).toFixed(2):0,cpc:clicks>0?Math.round(spend/clicks):0,desc:g('desc')};
+  }
+
+  db.collection(col).doc(id).update(data).then(()=>{
+    toast('✅ 已儲存修改！');
+    closeModal();
+  }).catch(e=>toast('儲存失敗：'+e.message));
+}
+
+function closeModal(){
+  document.getElementById('edit-modal').style.display='none';
+  editState={col:null,id:null};
+}
+
 // Set today as default date for income/expense forms
 const today=new Date().toISOString().split('T')[0];
 ['inc-date','exp-date','ad-date-start','ad-date-end','bk-date'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.value=today;
 });
+loadCustomOptions();
 renderMiniCal();
 renderGantt();
 updateDashboard();
 </script>
+
+<!-- ══ EDIT MODAL ══ -->
+<div class="modal-overlay" id="edit-modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">編輯紀錄</div>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn-save" onclick="saveEdit()">💾 儲存修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD OPTION MODAL ══ -->
+<div class="modal-overlay" id="addopt-modal" style="display:none" onclick="if(event.target===this)closeAddOpt()">
+  <div class="modal" style="min-width:320px;max-width:400px">
+    <div class="modal-title">新增選項</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px" id="addopt-label"></div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>新選項名稱</label>
+      <input id="addopt-input" placeholder="輸入新選項..." onkeydown="if(event.key==='Enter')confirmAddOpt()">
+    </div>
+    <div id="addopt-existing" style="margin-bottom:16px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAddOpt()">取消</button>
+      <button class="btn-save" onclick="confirmAddOpt()">新增</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
